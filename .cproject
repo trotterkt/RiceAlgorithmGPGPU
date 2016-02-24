@@ -27,6 +27,9 @@
 								<option id="nvcc.compiler.option.level.1363239164" name="Generate host debug information (-g)" superClass="nvcc.compiler.option.level" value="true" valueType="boolean"/>
 								<option defaultValue="nvcc.compiler.optimization.level.none" id="nvcc.compiler.optimization.level.2128375797" name="Optimization Level" superClass="nvcc.compiler.optimization.level" valueType="enumerated"/>
 								<option id="nvcc.compiler.pic.634492135" name="Position Independent Code (-fPIC)" superClass="nvcc.compiler.pic"/>
+								<option id="nvcc.compiler.include.paths.463037957" superClass="nvcc.compiler.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RiceAlgorithmGPGPU/src}&quot;"/>
+								</option>
 								<inputType id="nvcc.compiler.input.cu.314179619" superClass="nvcc.compiler.input.cu"/>
 								<inputType id="nvcc.compiler.input.cpp.1361191875" superClass="nvcc.compiler.input.cpp"/>
 								<inputType id="nvcc.compiler.input.c.642522743" superClass="nvcc.compiler.input.c"/>
@@ -128,4 +131,5 @@
 		</scannerConfigBuildInfo>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="refreshScope"/>
 </cproject>

@@ -11,18 +11,16 @@
 #include <iostream>
 #include <numeric>
 #include <stdlib.h>
+#include <iostream>
+#include <FileBasedImagePersistence.h>
+#include <Sensor.h>
+#include <CudaHelper.h>
+#include <RiceAlgorithmKernels.h>
 
-static void CheckCudaErrorAux (const char *, unsigned, const char *, cudaError_t);
-#define CUDA_CHECK_RETURN(value) CheckCudaErrorAux(__FILE__,__LINE__, #value, value)
+using namespace std;
+using namespace RiceAlgorithm;
 
-/**
- * CUDA kernel that computes reciprocal values for a given vector
- */
-__global__ void reciprocalKernel(float *data, unsigned vectorSize) {
-	unsigned idx = blockIdx.x*blockDim.x+threadIdx.x;
-	if (idx < vectorSize)
-		data[idx] = 1.0/data[idx];
-}
+
 
 /**
  * Host function that copies the data and launches the work on GPU
@@ -60,6 +58,44 @@ void initialize(float *data, unsigned size)
 
 int main(void)
 {
+	//=====================================================
+    // These parameters are what is utilized for LandSat
+    const int Rows(1024);
+    const int Columns(1024);
+    const int Bands(6);
+
+    cout.precision(4);
+
+    cout << "Compressing Landsat_agriculture-u16be-6x1024x1024..." << endl;
+
+    FileBasedImagePersistence image("Landsat_agriculture-u16be-6x1024x1024", Rows, Columns, Bands);
+
+
+    // This data has not been pre-processed. Need to decide if the pre-processor will be
+    // placed on the GPGPU -- if so, needs to be un-associated from the Sensor type
+
+//    ushort* hostImagePtr = image.getSampleData(1);
+//
+//
+//    ushort *gpuRawImageData;
+//
+//	const int NumberOfSamples(Rows * Columns * Bands);
+//
+//
+//	CUDA_CHECK_RETURN(cudaMalloc((void **)&gpuRawImageData, sizeof(ushort)*NumberOfSamples));
+//	CUDA_CHECK_RETURN(cudaMemcpy(gpuRawImageData, hostImagePtr, sizeof(ushort)*NumberOfSamples, cudaMemcpyHostToDevice));
+
+
+
+    // Construct my LandSat sensor, which performs the compression of the supplied
+    // raw image data per the Rice algorithm
+	Sensor landsat(&image, Rows, Columns, Bands);
+
+    // Initiate the Rice algorithm compression
+	landsat.process();
+
+    //=====================================================
+
 	static const int WORK_SIZE = 65530;
 	float *data = new float[WORK_SIZE];
 
@@ -81,15 +117,4 @@ int main(void)
 	return 0;
 }
 
-/**
- * Check the return value of the CUDA runtime API call and exit
- * the application if the call has failed.
- */
-static void CheckCudaErrorAux (const char *file, unsigned line, const char *statement, cudaError_t err)
-{
-	if (err == cudaSuccess)
-		return;
-	std::cerr << statement<<" returned " << cudaGetErrorString(err) << "("<<err<< ") at "<<file<<":"<<line << std::endl;
-	exit (1);
-}
 
