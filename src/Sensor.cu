@@ -18,6 +18,8 @@
 #include <Timing.h>
 #include <Endian.h>
 #include <CudaHelper.h>
+#include <SensorKernels.h>
+
 
 
 using namespace std;
@@ -112,6 +114,12 @@ void Sensor::process()
     // at applying Amdahl's Law!!!
    	const int NumberThreadsPerBlock(32);
    	const int NumberOfBlocks(totalSamples/NumberThreadsPerBlock);
+
+
+
+   	encodingKernel<<<NumberOfBlocks, NumberThreadsPerBlock>>> (gpuPreProcessedImageData);
+
+
 
 //    for(blockIndex = 0; blockIndex<totalSamples; blockIndex+=32)
 //    {

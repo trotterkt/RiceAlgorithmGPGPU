@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <vector>
+#include <thrust/device_vector.h>
+
 #include <sstream>
 #include <Predictor.h>
 #include <AdaptiveEntropyEncoder.h>
@@ -95,7 +97,8 @@ class Sensor
         unsigned int myZDimension;
 
         RiceAlgorithm::Predictor myPreprocessor;
-		std::vector<class RiceAlgorithm::AdaptiveEntropyEncoder*> myEncoderList;
+		//std::vector<class RiceAlgorithm::AdaptiveEntropyEncoder*> myEncoderList;
+		thrust::device_vector<class RiceAlgorithm::AdaptiveEntropyEncoder*> myEncoderList;
 
 		unsigned int myWinningEncodedLength;
 
