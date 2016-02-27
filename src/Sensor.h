@@ -30,6 +30,11 @@ const double LandsatDownlinkRate(384);
 
 const ushort MaximumEncodedBlockSize(RiceAlgorithm::BlockSize);
 
+// These parameters are what is utilized for LandSat
+const int Rows(1024);
+const int Columns(1024);
+const int Bands(6);
+
 
 
 // Note that if member types are not defined as being of similar size

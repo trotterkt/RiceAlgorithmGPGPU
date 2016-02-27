@@ -108,17 +108,37 @@ void Sensor::process()
    	CUDA_CHECK_RETURN(cudaMalloc((void **)&gpuPreProcessedImageData, sizeof(ushort)*totalSamples));
    	CUDA_CHECK_RETURN(cudaMemcpy(gpuPreProcessedImageData, residualsPtr, sizeof(ushort)*totalSamples, cudaMemcpyHostToDevice));
 
+
+
+   	// total samples (1024*1024*6) / 32 sample blocks  = 196608
+    // Allocate space for the encoded blocks at one time. Include 1 byte at the start of
+   	// every 32 bytes for the encoded size
+   	unsigned char* gpuEncodedBlocks;
+   	CUDA_CHECK_RETURN(cudaMalloc((void **)&gpuEncodedBlocks, sizeof(unsigned char)*(Rows*Columns*Bands)));
     //***************************************************************************
 
     //:TODO: This is one of the 1st places where we will start looking
     // at applying Amdahl's Law!!!
-   	const int NumberThreadsPerBlock(32);
-   	const int NumberOfBlocks(totalSamples/NumberThreadsPerBlock);
+//   	const int NumberThreadsPerBlock(32);
+//   	const int NumberOfBlocks(totalSamples/NumberThreadsPerBlock);
+//   	encodingKernel<<<NumberOfBlocks, NumberThreadsPerBlock>>> (gpuPreProcessedImageData);
 
 
+   	// This allocation means 16, 32-sample blocks, for a total of 512 threads/block
+   	const int NumberThreadsPerBlockXdim(32);
+   	const int NumberThreadsPerBlockYdim(16);
 
-   	encodingKernel<<<NumberOfBlocks, NumberThreadsPerBlock>>> (gpuPreProcessedImageData);
+   	const int NumberOfBlocks(totalSamples / (NumberThreadsPerBlockXdim * NumberThreadsPerBlockYdim));
 
+   	encodingKernel<<<NumberOfBlocks, NumberThreadsPerBlockXdim, NumberThreadsPerBlockYdim>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
+
+
+   	unsigned char cpuEncodedBlock[Rows*Columns*Bands];
+   	CUDA_CHECK_RETURN(cudaMemcpy(cpuEncodedBlock, gpuEncodedBlocks, (Rows*Columns*Bands), cudaMemcpyDeviceToHost));
+
+   	cout << "GPGPU:[0]:" << hex << int(cpuEncodedBlock[0]) << " GPGPU:[1]:"  << int(cpuEncodedBlock[1]) << " GPGPU:[2]:" << int(cpuEncodedBlock[2]) << endl;
+
+   	//CUDA_CHECK_RETURN(cudaMemcpy(gpuPreProcessedImageData, residualsPtr, sizeof(ushort)*totalSamples, cudaMemcpyHostToDevice));
 
 
 //    for(blockIndex = 0; blockIndex<totalSamples; blockIndex+=32)

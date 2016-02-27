@@ -59,10 +59,6 @@ void initialize(float *data, unsigned size)
 int main(void)
 {
 	//=====================================================
-    // These parameters are what is utilized for LandSat
-    const int Rows(1024);
-    const int Columns(1024);
-    const int Bands(6);
 
     cout.precision(4);
 
