@@ -11,7 +11,8 @@
 
 #include <Sensor.h>
 #include <iostream>
-#include <bitset>
+//#include <bitset>
+//#include <boost/dynamic_bitset.hpp>
 #include <vector>
 #include <math.h>
 #include <limits.h>
@@ -83,7 +84,7 @@ void Sensor::process()
 
     // Should only need to get the residuals once for a given raw image set
     ushort* residualsPtr = myPreprocessor.getResiduals(mySamples);
-    
+
     timestamp_t t1 = getTimestamp();
 
     cout << "Prediction processing time ==> " << fixed << getSecondsDiff(t0, t1) << " seconds"<< endl;
@@ -113,7 +114,7 @@ void Sensor::process()
    	// total samples (1024*1024*6) / 32 sample blocks  = 196608
     // Allocate space for the encoded blocks at one time. Include 1 byte at the start of
    	// every 32 bytes for the encoded size
-   	unsigned char* gpuEncodedBlocks;
+    unsigned char* gpuEncodedBlocks(0);
    	CUDA_CHECK_RETURN(cudaMalloc((void **)&gpuEncodedBlocks, sizeof(unsigned char)*(Rows*Columns*Bands)));
     //***************************************************************************
 
@@ -124,99 +125,170 @@ void Sensor::process()
 //   	encodingKernel<<<NumberOfBlocks, NumberThreadsPerBlock>>> (gpuPreProcessedImageData);
 
 
-   	// This allocation means 16, 32-sample blocks, for a total of 512 threads/block
+   	// This allocation means 16, 32-sample blocks, for a total of 512 threads/block (6291456 samples)
    	const int NumberThreadsPerBlockXdim(32);
    	const int NumberThreadsPerBlockYdim(16);
+   	const int NumberThreadsPerBlockZdim(2);
 
-   	const int NumberOfBlocks(totalSamples / (NumberThreadsPerBlockXdim * NumberThreadsPerBlockYdim));
+   	const int NumberOfBlocks(totalSamples / (NumberThreadsPerBlockXdim * NumberThreadsPerBlockYdim * NumberThreadsPerBlockZdim));
 
-   	encodingKernel<<<NumberOfBlocks, NumberThreadsPerBlockXdim, NumberThreadsPerBlockYdim>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
+   	dim3 blockDim(NumberThreadsPerBlockXdim, NumberThreadsPerBlockYdim, NumberThreadsPerBlockZdim);
+
+   	//encodingKernel<<<NumberOfBlocks, NumberThreadsPerBlockXdim, NumberThreadsPerBlockYdim>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
+   	encodingKernel<<<NumberOfBlocks, blockDim>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
 
 
-   	unsigned char cpuEncodedBlock[Rows*Columns*Bands];
+   	unsigned char cpuEncodedBlock[Rows*Columns*Bands] = {0};
    	CUDA_CHECK_RETURN(cudaMemcpy(cpuEncodedBlock, gpuEncodedBlocks, (Rows*Columns*Bands), cudaMemcpyDeviceToHost));
 
-   	cout << "GPGPU:[0]:" << hex << int(cpuEncodedBlock[0]) << " GPGPU:[1]:"  << int(cpuEncodedBlock[1]) << " GPGPU:[2]:" << int(cpuEncodedBlock[2]) << endl;
-
-   	//CUDA_CHECK_RETURN(cudaMemcpy(gpuPreProcessedImageData, residualsPtr, sizeof(ushort)*totalSamples, cudaMemcpyHostToDevice));
 
 
-//    for(blockIndex = 0; blockIndex<totalSamples; blockIndex+=32)
-//    {
-//
-//        size_t encodedSize(0);
-//
-//        // Reset for each capture of the winning length
-//        myWinningEncodedLength = (unsigned int) -1;
-//
-//        t0_intermediate = getTimestamp();
-//
-//        // Loop through each one of the possible encoders
-//        for (std::vector<AdaptiveEntropyEncoder*>::iterator iteration = myEncoderList.begin();
-//                iteration != myEncoderList.end(); ++iteration)
-//        {
-//
-//            encodedStream.clear();
-//
-//            // 1 block at a time
-//            (*iteration)->setSamples(&residualsPtr[blockIndex]);
-//
-//            CodingSelection selection; // This will be most applicable for distinguishing FS and K-split
-//
-//            encodedLength = (*iteration)->encode(encodedStream, selection);
-//
-//            // This basically determines the winner
-//            if (encodedLength < myWinningEncodedLength)
-//            {
-//                *this = *(*iteration);
-//                myWinningEncodedLength = encodedLength;
-//                winningSelection = selection;
-//
-//                encodedSize = (*iteration)->getEncodedBlockSize();
-//            }
-//
-//        }
-//
-//        t1_intermediate = getTimestamp();
-//
-//        //cout << "And the Winner is: " << int(winningSelection) << " of code length: " << myWinningEncodedLength << " on Block Sample [" << blockIndex << "]" << endl;
-//
-//
-//        ushort partialBits = myEncodedBitCount % BitsPerByte;
-//        unsigned char lastByte(0);
-//
-//        // When the last byte written is partial, as compared with the
-//        // total bits written, capture it so that it can be merged with
-//        // the next piece of encoded data
-//        if (getLastByte(lastByte))
-//		{
-//        	//cout << "Before partial appendage: " << encodedStream << endl;
-//        	unsigned int appendedSize = encodedStream.size()+partialBits;
-//			encodedStream.resize(appendedSize);
-//        	//cout << "Again  partial appendage: " << encodedStream << endl;
-//
-//			boost::dynamic_bitset<> lastByteStream(encodedStream.size(), lastByte);
-//			lastByteStream <<= (encodedStream.size() - partialBits);
-//			encodedStream |= lastByteStream;
-//        	//cout << "After partial appendage : " << encodedStream << endl;
-//		}
-//
-//        myEncodedBitCount += (myWinningEncodedLength + CodeOptionBitFieldFundamentalOrNoComp);
-//
-//        t2_intermediate = getTimestamp();
-//
-//        static unsigned int lastWinningEncodedLength(0);
-//
-//        sendEncodedSamples(encodedStream, encodedSize);
-//
-//        getLastByte(lastByte);
-//
-//        t3_intermediate = getTimestamp();
-//
-//        lastWinningEncodedLength = encodedStream.size();
-//
-//    }
+   	boost::dynamic_bitset<unsigned char> encodedBits;
+   	//encodedBits.resize(88);
 
+   	cout << "cpuEncodedBlock=" << hex;
+   	for(int index=0; index<12; index++)
+   	{
+   		cout << int(cpuEncodedBlock[index]);
+   		//encodedBits[index] = cpuEncodedBlock[index];
+   		encodedBits.append(cpuEncodedBlock[index]);
+   	}
+
+   	cout << endl;
+   	cout << "GPGPU:" << encodedBits << endl;
+
+
+
+
+	//  reverses the bit order
+   	//*************************************************************************
+	// Note that this algorithm was largely arrived at empirically. Looking
+	// at the data to see what is correct. Keep this in mind when defining
+	// architectural decisions, and when there may exist reluctance
+	// after prototyping activities.
+	boost::dynamic_bitset<unsigned char> convertedStream;
+    size_t numberOfBytes = encodedBits.size()/BitsPerByte;
+    if(encodedBits.size() % BitsPerByte)
+    {
+    	numberOfBytes++;
+    }
+
+
+	convertedStream.resize(numberOfBytes*BitsPerByte);
+	encodedBits.resize(numberOfBytes*BitsPerByte);
+
+	convertedStream[95] = encodedBits[0];
+
+	for (int bitIndex = 0; bitIndex < encodedBits.size(); bitIndex++)
+	{
+
+		int targetBit = encodedBits.size()-bitIndex-1;
+		int sourceBit = bitIndex;
+
+		convertedStream[targetBit] = encodedBits[sourceBit];
+	}
+
+
+   	cout << "convertedStream:" << convertedStream << endl;
+   	//*************************************************************************
+
+
+//   	myEncodedBitCount += (myWinningEncodedLength + CodeOptionBitFieldFundamentalOrNoComp);
+//
+//	t2_intermediate = getTimestamp();
+//
+//	static unsigned int lastWinningEncodedLength(0);
+//
+//	sendEncodedSamples(encodedBits, 81);
+//
+//	getLastByte(lastByte);
+//
+//	t3_intermediate = getTimestamp();
+//
+//	lastWinningEncodedLength = encodedStream.size();
+
+
+
+//
+//   	//CUDA_CHECK_RETURN(cudaMemcpy(gpuPreProcessedImageData, residualsPtr, sizeof(ushort)*totalSamples, cudaMemcpyHostToDevice));
+//
+//
+////    for(blockIndex = 0; blockIndex<totalSamples; blockIndex+=32)
+////    {
+////
+////        size_t encodedSize(0);
+////
+////        // Reset for each capture of the winning length
+////        myWinningEncodedLength = (unsigned int) -1;
+////
+////        t0_intermediate = getTimestamp();
+////
+////        // Loop through each one of the possible encoders
+////        for (std::vector<AdaptiveEntropyEncoder*>::iterator iteration = myEncoderList.begin();
+////                iteration != myEncoderList.end(); ++iteration)
+////        {
+////
+////            encodedStream.clear();
+////
+////            // 1 block at a time
+////            (*iteration)->setSamples(&residualsPtr[blockIndex]);
+////
+////            CodingSelection selection; // This will be most applicable for distinguishing FS and K-split
+////
+////            encodedLength = (*iteration)->encode(encodedStream, selection);
+////
+////            // This basically determines the winner
+////            if (encodedLength < myWinningEncodedLength)
+////            {
+////                *this = *(*iteration);
+////                myWinningEncodedLength = encodedLength;
+////                winningSelection = selection;
+////
+////                encodedSize = (*iteration)->getEncodedBlockSize();
+////            }
+////
+////        }
+////
+////        t1_intermediate = getTimestamp();
+////
+////        //cout << "And the Winner is: " << int(winningSelection) << " of code length: " << myWinningEncodedLength << " on Block Sample [" << blockIndex << "]" << endl;
+////
+////
+////        ushort partialBits = myEncodedBitCount % BitsPerByte;
+////        unsigned char lastByte(0);
+////
+////        // When the last byte written is partial, as compared with the
+////        // total bits written, capture it so that it can be merged with
+////        // the next piece of encoded data
+////        if (getLastByte(lastByte))
+////		{
+////        	//cout << "Before partial appendage: " << encodedStream << endl;
+////        	unsigned int appendedSize = encodedStream.size()+partialBits;
+////			encodedStream.resize(appendedSize);
+////        	//cout << "Again  partial appendage: " << encodedStream << endl;
+////
+////			boost::dynamic_bitset<> lastByteStream(encodedStream.size(), lastByte);
+////			lastByteStream <<= (encodedStream.size() - partialBits);
+////			encodedStream |= lastByteStream;
+////        	//cout << "After partial appendage : " << encodedStream << endl;
+////		}
+////
+////        myEncodedBitCount += (myWinningEncodedLength + CodeOptionBitFieldFundamentalOrNoComp);
+////
+////        t2_intermediate = getTimestamp();
+////
+////        static unsigned int lastWinningEncodedLength(0);
+////
+////        sendEncodedSamples(encodedStream, encodedSize);
+////
+////        getLastByte(lastByte);
+////
+////        t3_intermediate = getTimestamp();
+////
+////        lastWinningEncodedLength = encodedStream.size();
+////
+////    }
+////
     timestamp_t t3 = getTimestamp();
 
 
@@ -226,6 +298,8 @@ void Sensor::process()
             << "\n(intermediate t2-t3): " << fixed << getSecondsDiff(t2_intermediate, t3_intermediate) << " seconds\n" << endl;
 
     cout << "Encoding processing time ==> " << fixed << getSecondsDiff(t2, t3) << " seconds"<< endl;
+//
+
 
 }
 
