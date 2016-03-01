@@ -126,16 +126,20 @@ void Sensor::process()
 
 
    	// This allocation means 16, 32-sample blocks, for a total of 512 threads/block (6291456 samples)
-   	const int NumberThreadsPerBlockXdim(32);
-   	const int NumberThreadsPerBlockYdim(16);
+   	//const int NumberThreadsPerBlockXdim(32);
+   	//const int NumberThreadsPerBlockYdim(16);
+   	//const int NumberThreadsPerBlockZdim(2);
+   	const int NumberThreadsPerBlockXdim(1);
+   	const int NumberThreadsPerBlockYdim(512);
    	const int NumberThreadsPerBlockZdim(2);
 
-   	const int NumberOfBlocks(totalSamples / (NumberThreadsPerBlockXdim * NumberThreadsPerBlockYdim * NumberThreadsPerBlockZdim));
+   	//const int NumberOfBlocks(totalSamples / (NumberThreadsPerBlockXdim * NumberThreadsPerBlockYdim * NumberThreadsPerBlockZdim));
+   	const int NumberOfBlocks((totalSamples / (NumberThreadsPerBlockXdim * NumberThreadsPerBlockYdim * NumberThreadsPerBlockZdim))/32);
 
    	dim3 blockDim(NumberThreadsPerBlockXdim, NumberThreadsPerBlockYdim, NumberThreadsPerBlockZdim);
 
-   	//encodingKernel<<<NumberOfBlocks, NumberThreadsPerBlockXdim, NumberThreadsPerBlockYdim>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
-   	encodingKernel<<<NumberOfBlocks, blockDim>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
+   	encodingKernel<<<NumberOfBlocks, NumberThreadsPerBlockXdim, NumberThreadsPerBlockYdim>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
+   	//encodingKernel<<<NumberOfBlocks, blockDim>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
 
 
    	unsigned char cpuEncodedBlock[Rows*Columns*Bands] = {0};

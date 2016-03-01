@@ -125,9 +125,12 @@ __device__ void shiftLeft(unsigned char* array, unsigned int bitSize, unsigned i
 //	delete [] arrayCopy;
 }
 
-
-__device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int dataIndex, RiceAlgorithm::CodingSelection &selection, unsigned char* encodedStream)
+//NOTE: CUDA does not support passing reference to kernel argument
+//__device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int dataIndex, RiceAlgorithm::CodingSelection &selection, unsigned char* encodedStream)
+__device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int dataIndex, RiceAlgorithm::CodingSelection* selection, unsigned char* encodedStream)
 {
+	 RiceAlgorithm::CodingSelection selection2;
+
 	// Apply SplitSequence encoding
 	//===========================================================
 
@@ -149,31 +152,41 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
         if(code_len_temp < code_len)
         {
             code_len = code_len_temp;
-            selection = RiceAlgorithm::CodingSelection(k);
+            selection2 = RiceAlgorithm::CodingSelection(k);
         }
     }
 
     size_t encodedSizeList[32];
-    size_t totalEncodedSize(0);
+    unsigned int totalEncodedSize(0);
 
     // Get the total encoded size first
     for(int index = dataIndex; index < (dataIndex+32); index++)
     {
-        size_t encodedSize = (inputSamples[index] >> selection) + 1;
+        size_t encodedSize = (inputSamples[index] >> selection2) + 1;
         encodedSizeList[index-dataIndex] = encodedSize;
-        totalEncodedSize += encodedSize;
+        totalEncodedSize += int(encodedSize);
+
+        if(dataIndex < 32)
+        printf("index=%d BlockInx=%d totalEncodedSize=%d\n", index, dataIndex, totalEncodedSize );
+
     }
 
     // include space for the  code option
-    totalEncodedSize += RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp;
+//    totalEncodedSize += int(RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp);
 
+    if(dataIndex < 96)
+    printf("BlockInx=%d totalEncodedSize=%d\n", dataIndex, totalEncodedSize );
 
     // assign each encoded sample and shift by the next one
     // at the end of the loop, we will assign the last one
     // unsigned char* localEncodedStream(0);
 	// Not allocating from global memory is significantly faster
 	const int MaximumByteArray(20);
-    unsigned char localEncodedStream[MaximumByteArray];
+    unsigned char localEncodedStream[MaximumByteArray] = {0};
+
+
+    localEncodedStream[0] = 1;
+
 
     // determine number of bytes
     unsigned int numberOfBytes(totalEncodedSize/RiceAlgorithm::BitsPerByte);
@@ -182,13 +195,45 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     	numberOfBytes++;
     }
 
+
     //localEncodedStream = new unsigned char[numberOfBytes];
 
 
+    // after the zero sequence number that was split off, then we add that value to the stream
+    // for each of the samples
+//    boost::dynamic_bitset<> maskBits(selection, 0xffff);
+//    ulong mask(0xffff);
+//
+    for(int index = dataIndex; index < (dataIndex+32); index++)
+    {
+//        ushort maskedSample = inputSamples[index] & mask;
+//
+//        //:TODO: this section appears to be responsible for about 8 seconds in the
+//        // total encoding time
+//        //===================================================================================
+//        boost::dynamic_bitset<> encodedSample(selection, maskedSample);
+//        size_t encodedSize = (inputSamples[index] >> selection2) + 1;
+//
+//        shiftLeft(localEncodedStream, totalEncodedSize, sizeof(ushort) * RiceAlgorithm::BitsPerByte);
+//
+//
+        totalEncodedSize += selection2;
+//
+//        shiftLeft(localEncodedStream, totalEncodedSize, selection2);
+//
+//        inputSamples[index]
+//        localEncodedStream[numberOfBytes-1] |= encodedSample;
+//
+//        totalEncodedSize += (sizeof(ushort) * RiceAlgorithm::BitsPerByte);
+//        //===================================================================================
+    }
+
+    if(dataIndex <= 96)
+    printf("BlockInx=%d totalEncodedSize=%d\n", dataIndex, totalEncodedSize );
 
 //Come back here
 	//if(blockIdx.x == 0 && (threadIdx.x == 0) && (threadIdx.y == 0)  && (threadIdx.z == 0)) // otherwise I get duplicate!!! WHY????? -- Different warps?
-    for(int index = 0; index < 32; index++)
+    for(int index = dataIndex; index < (dataIndex+32); index++)
     {
     	//encodedStream[dataIndex + (numberOfBytes-1)] = 0x1;
     	localEncodedStream[numberOfBytes-1] |= 0x1;
@@ -231,14 +276,14 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     memcpy(&encodedStream[dataIndex], localEncodedStream, numberOfBytes);
 
 
-    if(!blockIdx.x)
-	printf("\nBlock:%d dataIndex=%d threadIdx.x=%d threadIdx.y=%d threadIdx.z=%d\n", blockIdx.x, dataIndex, threadIdx.x, threadIdx.y, threadIdx.z);
+//  if(dataIndex==0)
+//	 printf("\nBlock:%d dataIndex=%d threadIdx.x=%d threadIdx.y=%d threadIdx.z=%d\n", blockIdx.x, dataIndex, threadIdx.x, threadIdx.y, threadIdx.z);
 
-	if(blockIdx.x == 0 && (threadIdx.x == 0) && (threadIdx.y == 0) && (threadIdx.z == 0))
-	{
-		printf("\nBlock:%d selection:%d code_len=%d numberOfBytes=%d encoded[next to last]=%x encoded[last]=%x \n", blockIdx.x, selection, code_len, numberOfBytes, encodedStream[dataIndex+30], encodedStream[dataIndex+31]);
-
-	}
+//	if(blockIdx.x == 0 && (threadIdx.x == 0) && (threadIdx.y == 0) && (threadIdx.z == 0))
+//	{
+//		printf("\nBlock:%d selection:%d code_len=%d numberOfBytes=%d encoded[next to last]=%x encoded[last]=%x \n", blockIdx.x, selection, code_len, numberOfBytes, encodedStream[dataIndex+30], encodedStream[dataIndex+31]);
+//
+//	}
 
     // include space for the  code option :TODO: This only happens once
     //totalEncodedSize += RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp;
@@ -259,30 +304,20 @@ __global__ void encodingKernel(ushort inputSamples[32], unsigned char* gpuEncode
 {
 	// Operate on all samples for a given block together
 	unsigned int sampleIndex = threadIdx.x;
-	unsigned int dataIndex = (threadIdx.x + blockIdx.x*blockDim.x + blockIdx.y*blockDim.y + blockIdx.z*blockDim.z)/32;
+	//unsigned int dataIndex = (threadIdx.x + blockIdx.y*blockDim.x + blockIdx.z*blockDim.y*blockDim.z);
+	unsigned int dataIndex = blockIdx.x * 32;
 
 
-	if(blockIdx.x == 0 && (threadIdx.x == 0) && (threadIdx.y == 0) && (threadIdx.z == 0))
-	{
-		for(int index=0; index<32; index++)
-		{
-			printf("Block:%d data[%d]=%d\n", blockIdx.x, index, inputSamples[dataIndex+index]);
-		}
-	}
-	if(blockIdx.x == 1 && (threadIdx.x == 0) && (threadIdx.y == 0) && (threadIdx.z == 0))
-	{
-		for(int index=0; index<32; index++)
-		{
-			printf("Block:%d data[%d]=%d\n", blockIdx.x, index, inputSamples[dataIndex+index]);
-		}
-	}
-	if(blockIdx.x == 2 && (threadIdx.x == 0)&& (threadIdx.y == 0) && (threadIdx.z == 0))
-	{
-		for(int index=0; index<32; index++)
-		{
-			printf("Block:%d data[%d]=%d\n", blockIdx.x, index, inputSamples[dataIndex+index]);
-		}
-	}
+//	if(!dataIndex)
+//	//if(blockIdx.x <= 2 && (threadIdx.x == 0) && (threadIdx.y == 0) && (threadIdx.z == 0))
+//	{
+//		for(int index=0; index<32; index++)
+//		{
+//			printf("Block:%d data[%d]=%d\n", blockIdx.x, index, inputSamples[dataIndex+index]);
+//		}
+//	}
+
+
 
 
 	RiceAlgorithm::CodingSelection selection;
@@ -291,7 +326,7 @@ __global__ void encodingKernel(ushort inputSamples[32], unsigned char* gpuEncode
 	RiceAlgorithm::CodingSelection winningSelection;
 
 	// Apply SplitSequence encoding
-	encodedLength = splitSequenceEncoding(inputSamples, dataIndex, selection, gpuEncodedBlocks);
+	encodedLength = splitSequenceEncoding(inputSamples, dataIndex, &selection, gpuEncodedBlocks);
 
 	// Find the winning encoding for all encoding types
     // This basically determines the winner
