@@ -16,6 +16,49 @@ using namespace std;
 
 const int BitsInByte(8);
 
+// Do not have access to string library in CUDA, so need
+// to create own
+__device__ char * cuda_strcpy(char *dest, const char *src)
+{
+  int i = 0;
+  do
+  {
+    dest[i] = src[i];
+  }
+  while (src[i++] != 0);
+
+  return dest;
+}
+
+__device__ char * cuda_strcat(char *dest, const char *src)
+{
+  int i = 0;
+  while (dest[i] != 0) i++;
+
+  cuda_strcpy(dest+i, src);
+  return dest;
+}
+
+__device__ const char *byte_to_binary(unsigned char* x, int numberOfBytes)
+{
+    const int MaximumBitLength(504);
+
+    static char b[MaximumBitLength] = {0};
+
+    b[0] = '\0';
+
+    for(int byteIndex=0; byteIndex<numberOfBytes; byteIndex++)
+    {
+        int z;
+        for (z = 0x80; z > 0; z >>= 1)
+        {
+            cuda_strcat(b, ((x[byteIndex] & z) == z) ? "1" : "0");
+        }
+    }
+
+    return b;
+}
+
 //*********************************************************************
 // Architectural consideration for resource allocation
 // This function would be implemented by a C programmer.
@@ -168,7 +211,6 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 
         if(dataIndex < 32)
         printf("index=%d BlockInx=%d totalEncodedSize=%d\n", index, dataIndex, totalEncodedSize );
-
     }
 
     // include space for the  code option
@@ -195,6 +237,8 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     	numberOfBytes++;
     }
 
+    if(dataIndex <= 96)
+    printf("BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, numberOfBytes));
 
     //localEncodedStream = new unsigned char[numberOfBytes];
 
@@ -229,7 +273,7 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     }
 
     if(dataIndex <= 96)
-    printf("BlockInx=%d totalEncodedSize=%d\n", dataIndex, totalEncodedSize );
+    printf("BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, numberOfBytes));
 
 //Come back here
 	//if(blockIdx.x == 0 && (threadIdx.x == 0) && (threadIdx.y == 0)  && (threadIdx.z == 0)) // otherwise I get duplicate!!! WHY????? -- Different warps?
