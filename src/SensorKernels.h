@@ -24,8 +24,8 @@ __device__ char * cuda_strcpy(char *dest, const char *src)
   do
   {
     dest[i] = src[i];
-  }
-  while (src[i++] != 0);
+
+  } while (src[i++] != 0);
 
   return dest;
 }
@@ -33,26 +33,29 @@ __device__ char * cuda_strcpy(char *dest, const char *src)
 __device__ char * cuda_strcat(char *dest, const char *src)
 {
   int i = 0;
+
   while (dest[i] != 0) i++;
 
   cuda_strcpy(dest+i, src);
   return dest;
 }
 
-__device__ const char *byte_to_binary(unsigned char* x, int numberOfBytes)
+__device__ const char *byte_to_binary(unsigned char* x, int numberOfBits)
 {
     const int MaximumBitLength(504);
 
-    static char b[MaximumBitLength] = {0};
+    __shared__ static char b[MaximumBitLength];
 
     b[0] = '\0';
 
-    for(int byteIndex=0; byteIndex<numberOfBytes; byteIndex++)
+
+    for(int bitIndex=0; bitIndex<numberOfBits; )
     {
-        int z;
-        for (z = 0x80; z > 0; z >>= 1)
+        unsigned int z;
+        for (z = 0x80; z >= 0x1; z >>= 1)
         {
-            cuda_strcat(b, ((x[byteIndex] & z) == z) ? "1" : "0");
+            cuda_strcat(b, ((x[bitIndex/BitsInByte] & z) == z) ? "1" : "0");
+            bitIndex++;
         }
     }
 
@@ -111,11 +114,10 @@ __device__ void shiftRight(unsigned char* array, unsigned int bitSize, unsigned 
 
 	memcpy(array, arrayCopy, numberOfBytes);
 
-	//delete [] arrayCopy;
 }
 
 
-__device__ void shiftLeft(unsigned char* array, unsigned int bitSize, unsigned int arrayBitShift)
+__device__ unsigned int shiftLeft(unsigned char* array, unsigned int bitSize, unsigned int arrayBitShift)
 {
 	unsigned int numberOfBytes(bitSize/BitsInByte);
 
@@ -146,10 +148,10 @@ __device__ void shiftLeft(unsigned char* array, unsigned int bitSize, unsigned i
     for(unsigned int byteIndex=byteShift; byteIndex<numberOfBytes; byteIndex++)
     {
     	// don't shift larger than the size of the stream
-//    	if((byteIndex - byteShift) < 0)
-//    	{
-//    		break;
-//    	}
+    	if((byteIndex - byteShift) < 0)
+    	{
+    		break;
+    	}
 
     	previousBits = (array[byteIndex+1] & (mask << (BitsInByte - bitShift)));
     	previousBits >>= (BitsInByte - bitShift);
@@ -164,8 +166,6 @@ __device__ void shiftLeft(unsigned char* array, unsigned int bitSize, unsigned i
 	}
 
 	memcpy(array, arrayCopy, numberOfBytes);
-//
-//	delete [] arrayCopy;
 }
 
 //NOTE: CUDA does not support passing reference to kernel argument
@@ -219,15 +219,35 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     if(dataIndex < 96)
     printf("BlockInx=%d totalEncodedSize=%d\n", dataIndex, totalEncodedSize );
 
+	// Not allocating from global memory is significantly faster
+	const int MaximumByteArray(20);
+    unsigned char localEncodedStream[MaximumByteArray];
+
+    memset(localEncodedStream, 0, MaximumByteArray);
+
     // assign each encoded sample and shift by the next one
     // at the end of the loop, we will assign the last one
     // unsigned char* localEncodedStream(0);
-	// Not allocating from global memory is significantly faster
-	const int MaximumByteArray(20);
-    unsigned char localEncodedStream[MaximumByteArray] = {0};
+    //for(int index = (dataIndex+31); index >= 0; index--)
+    for(int index = 31; index >= 0; index--)
+    {
+    	//localEncodedStream[totalEncodedSize/BitsInByte] |= 0x1;
+    	localEncodedStream[0] |= 0x1;
+    	//localEncodedStream <<= encodedSizeList[index];
+        //shiftLeft(&localEncodedStream[index-dataIndex], totalEncodedSize, encodedSizeList[index]);
+    	int shift = encodedSizeList[index];
+    	//int shift = 5;
+          shiftRight(localEncodedStream, totalEncodedSize, shift);
+      	//localEncodedStream[0] |= 0x1;
 
+        if(dataIndex <= 0)
+            printf("Line #237, BlockInx=%d totalEncodedSize=%d shift=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, shift, totalEncodedSize, byte_to_binary(localEncodedStream, 81));
 
-    localEncodedStream[0] = 1;
+    }
+    //localEncodedStream[0] |= 1;
+
+    if(dataIndex <= 0)
+        printf("Line #237, BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, 81));
 
 
     // determine number of bytes
@@ -237,20 +257,37 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     	numberOfBytes++;
     }
 
-    if(dataIndex <= 96)
-    printf("BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, numberOfBytes));
 
+    //if(dataIndex <= 96)
+    //printf("Line #247, BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, numberOfBytes));
+
+    localEncodedStream[0] = 1;
+
+
+
+    if(dataIndex <= 96)
+    {
+    	//byte_to_binary(localEncodedStream, numberOfBytes);
+    	//printf("Line #256, BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, numberOfBytes));
+    }
     //localEncodedStream = new unsigned char[numberOfBytes];
 
 
     // after the zero sequence number that was split off, then we add that value to the stream
     // for each of the samples
 //    boost::dynamic_bitset<> maskBits(selection, 0xffff);
-//    ulong mask(0xffff);
+    unsigned char mask = powf(2, selection2) - 1;
+
 //
-    for(int index = dataIndex; index < (dataIndex+32); index++)
+    unsigned char encodedSample[MaximumByteArray] = {0};
+    unsigned int additionalEncodedSize(0);
+
+
+    for(int index = 0; index < 32; index++)
     {
-//        ushort maskedSample = inputSamples[index] & mask;
+        ushort maskedSample = inputSamples[index+dataIndex] & mask;
+
+        additionalEncodedSize += selection2;
 //
 //        //:TODO: this section appears to be responsible for about 8 seconds in the
 //        // total encoding time
@@ -258,10 +295,11 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 //        boost::dynamic_bitset<> encodedSample(selection, maskedSample);
 //        size_t encodedSize = (inputSamples[index] >> selection2) + 1;
 //
-//        shiftLeft(localEncodedStream, totalEncodedSize, sizeof(ushort) * RiceAlgorithm::BitsPerByte);
+        //shiftLeft(localEncodedStream, totalEncodedSize, sizeof(ushort) * RiceAlgorithm::BitsPerByte);
+        shiftRight(encodedSample, selection2, sizeof(ushort) * RiceAlgorithm::BitsPerByte);
+        encodedSample[0] |= maskedSample;
 //
-//
-        totalEncodedSize += selection2;
+//        totalEncodedSize += selection2;
 //
 //        shiftLeft(localEncodedStream, totalEncodedSize, selection2);
 //
@@ -270,10 +308,14 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 //
 //        totalEncodedSize += (sizeof(ushort) * RiceAlgorithm::BitsPerByte);
 //        //===================================================================================
+
+        if(dataIndex <= 0)
+            printf("Line# 312 BlockInx=%d totalEncodedSize=%d encodedSample(size:%d)=%s\n", dataIndex, additionalEncodedSize, additionalEncodedSize, byte_to_binary(encodedSample, additionalEncodedSize));
+
     }
 
-    if(dataIndex <= 96)
-    printf("BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, numberOfBytes));
+    //if(dataIndex <= 96)
+    //printf("Line #289 BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, numberOfBytes));
 
 //Come back here
 	//if(blockIdx.x == 0 && (threadIdx.x == 0) && (threadIdx.y == 0)  && (threadIdx.z == 0)) // otherwise I get duplicate!!! WHY????? -- Different warps?
