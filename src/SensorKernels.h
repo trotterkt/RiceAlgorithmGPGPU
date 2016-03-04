@@ -12,6 +12,7 @@
 #include "math.h" // CUDA Math library
 #include <AdaptiveEntropyEncoder.h>
 
+
 using namespace std;
 
 const int BitsInByte(8);
@@ -276,18 +277,31 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     // after the zero sequence number that was split off, then we add that value to the stream
     // for each of the samples
 //    boost::dynamic_bitset<> maskBits(selection, 0xffff);
-    unsigned char mask = powf(2, selection2) - 1;
+    unsigned short mask = powf(2, selection2) - 1;
 
-//
-    unsigned char encodedSample[MaximumByteArray] = {0};
-    unsigned int additionalEncodedSize(0);
+    const unsigned int MaximumByteAdditionalArray(56); // 14*32/BitsInByte
+    const unsigned int additionalEncodedSize(selection2 * 32 * BitsInByte);
+
+
+    unsigned char encodedSample[MaximumByteAdditionalArray] = {0};
+    unsigned char individualEncodedSample[MaximumByteAdditionalArray];
 
 
     for(int index = 0; index < 32; index++)
     {
         ushort maskedSample = inputSamples[index+dataIndex] & mask;
+        unsigned char byteConvert[2] = {((maskedSample&0xff00)>>8), (maskedSample&0xff)}; //:KLUDGE: need to change the number into
+                                                                                          // a byte form for printing only -- endian issue?
 
-        additionalEncodedSize += selection2;
+        //==========================================================================================================
+        if(dataIndex <= 0)
+        	printf("Line #298, maskedSample(%d)(%d)(0x%0x)=%s\n",
+        			index, maskedSample, inputSamples[index+dataIndex], byte_to_binary(byteConvert, 16));
+        //==========================================================================================================
+        memset(individualEncodedSample, 0, sizeof(individualEncodedSample));
+        memset(individualEncodedSample, maskedSample, sizeof(maskedSample));
+        shiftRight(individualEncodedSample, selection2, sizeof(maskedSample)-selection2);
+
 //
 //        //:TODO: this section appears to be responsible for about 8 seconds in the
 //        // total encoding time
@@ -296,8 +310,8 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 //        size_t encodedSize = (inputSamples[index] >> selection2) + 1;
 //
         //shiftLeft(localEncodedStream, totalEncodedSize, sizeof(ushort) * RiceAlgorithm::BitsPerByte);
-        shiftRight(encodedSample, selection2, sizeof(ushort) * RiceAlgorithm::BitsPerByte);
-        encodedSample[0] |= maskedSample;
+        //shiftRight(encodedSample, selection2, sizeof(ushort) * RiceAlgorithm::BitsPerByte);
+        //encodedSample[0] |= maskedSample;
 //
 //        totalEncodedSize += selection2;
 //
@@ -309,8 +323,8 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 //        totalEncodedSize += (sizeof(ushort) * RiceAlgorithm::BitsPerByte);
 //        //===================================================================================
 
-        if(dataIndex <= 0)
-            printf("Line# 312 BlockInx=%d totalEncodedSize=%d encodedSample(size:%d)=%s\n", dataIndex, additionalEncodedSize, additionalEncodedSize, byte_to_binary(encodedSample, additionalEncodedSize));
+        //if(dataIndex <= 0)
+        //    printf("Line# 312 BlockInx=%d totalEncodedSize=%d encodedSample(size:%d)=%s\n", dataIndex, additionalEncodedSize, additionalEncodedSize, byte_to_binary(encodedSample, additionalEncodedSize));
 
     }
 
