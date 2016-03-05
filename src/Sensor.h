@@ -103,15 +103,15 @@ class Sensor
 
         RiceAlgorithm::Predictor myPreprocessor;
 		//std::vector<class RiceAlgorithm::AdaptiveEntropyEncoder*> myEncoderList;
-		thrust::device_vector<class RiceAlgorithm::AdaptiveEntropyEncoder*> myEncoderList;
+		//thrust::device_vector<class RiceAlgorithm::AdaptiveEntropyEncoder*> myEncoderList;
 
 		unsigned int myWinningEncodedLength;
 
 		//:TODO: These should instead be declared in the implementation file
-		RiceAlgorithm::AdaptiveEntropyEncoder* noComp;
-		RiceAlgorithm::SecondExtensionOption* secondExt;
-		RiceAlgorithm::ZeroBlockOption* zeroBlock;
-		RiceAlgorithm::SplitSequence* split; // this will become more specific
+		//RiceAlgorithm::AdaptiveEntropyEncoder* noComp;
+		//RiceAlgorithm::SecondExtensionOption* secondExt;
+		//RiceAlgorithm::ZeroBlockOption* zeroBlock;
+		//RiceAlgorithm::SplitSequence* split; // this will become more specific
 
 		void sendEncodedSamples(boost::dynamic_bitset<> &encodedStream, unsigned int encodedLength=0);
 

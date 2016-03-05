@@ -11,8 +11,6 @@
 
 #include <Sensor.h>
 #include <iostream>
-//#include <bitset>
-//#include <boost/dynamic_bitset.hpp>
 #include <vector>
 #include <math.h>
 #include <limits.h>
@@ -36,16 +34,16 @@ Sensor::Sensor(ImagePersistence* image, unsigned int x, unsigned int y, unsigned
     // Create the encoding types
     size_t bufferSize = myXDimension*myYDimension*myZDimension;
 
-    AdaptiveEntropyEncoder* noComp = new AdaptiveEntropyEncoder(bufferSize);
-    SecondExtensionOption* secondExt = new SecondExtensionOption(bufferSize);
-    ZeroBlockOption* zeroBlock = new ZeroBlockOption(bufferSize);
+    //AdaptiveEntropyEncoder* noComp = new AdaptiveEntropyEncoder(bufferSize);
+    //SecondExtensionOption* secondExt = new SecondExtensionOption(bufferSize);
+    //ZeroBlockOption* zeroBlock = new ZeroBlockOption(bufferSize);
     SplitSequence* split = new SplitSequence(bufferSize);
 
 
-    myEncoderList.push_back(noComp);  // No compression must be the first item
-    myEncoderList.push_back(secondExt);
-    myEncoderList.push_back(zeroBlock);
-    myEncoderList.push_back(split);
+    //myEncoderList.push_back(noComp);  // No compression must be the first item
+    // myEncoderList.push_back(secondExt);
+    // myEncoderList.push_back(zeroBlock);
+    //myEncoderList.push_back(split);
 }
 
 Sensor::~Sensor()
@@ -115,7 +113,7 @@ void Sensor::process()
     // Allocate space for the encoded blocks at one time. Include 1 byte at the start of
    	// every 32 bytes for the encoded size
     unsigned char* gpuEncodedBlocks(0);
-   	CUDA_CHECK_RETURN(cudaMalloc((void **)&gpuEncodedBlocks, sizeof(unsigned char)*(Rows*Columns*Bands)));
+   	CUDA_CHECK_RETURN(cudaMalloc((void **)&gpuEncodedBlocks, sizeof(ushort)*(Rows*Columns*Bands)));
     //***************************************************************************
 
     //:TODO: This is one of the 1st places where we will start looking
@@ -125,21 +123,41 @@ void Sensor::process()
 //   	encodingKernel<<<NumberOfBlocks, NumberThreadsPerBlock>>> (gpuPreProcessedImageData);
 
 
+
+
+   	// ***Block and Grid size determinations***
+   	//=========================================================================
+   	// Block XDim = 32, YDim = 32 (Y Dim will access 32 samples at a time),
+   	// 1024 threads will access 32768 samples.
+   	//
+   	// Grid XDim = 6, YDim = 32 ( this is equivalent to 192 blocks )
+   	// Total is then 6291456 samples processed
+   	//
+   	//
+   	//========================================================================
+   	dim3 threadsPerBlock(32, 32);
+   	dim3 gridBlocks(6, 32);
+
+   	encodingKernel<<<gridBlocks, threadsPerBlock>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
+
+
+
    	// This allocation means 16, 32-sample blocks, for a total of 512 threads/block (6291456 samples)
    	//const int NumberThreadsPerBlockXdim(32);
    	//const int NumberThreadsPerBlockYdim(16);
    	//const int NumberThreadsPerBlockZdim(2);
-   	const int NumberThreadsPerBlockXdim(1);
-   	const int NumberThreadsPerBlockYdim(512);
-   	const int NumberThreadsPerBlockZdim(2);
+   	//const int NumberThreadsPerBlockXdim(1);
+   	//const int NumberThreadsPerBlockYdim(512);
+   	//const int NumberThreadsPerBlockZdim(2);
 
    	//const int NumberOfBlocks(totalSamples / (NumberThreadsPerBlockXdim * NumberThreadsPerBlockYdim * NumberThreadsPerBlockZdim));
-   	const int NumberOfBlocks((totalSamples / (NumberThreadsPerBlockXdim * NumberThreadsPerBlockYdim * NumberThreadsPerBlockZdim))/32);
+   	//const int NumberOfBlocks((totalSamples / (NumberThreadsPerBlockXdim * NumberThreadsPerBlockYdim * NumberThreadsPerBlockZdim))/32);
 
-   	dim3 blockDim(NumberThreadsPerBlockXdim, NumberThreadsPerBlockYdim, NumberThreadsPerBlockZdim);
+   	//dim3 blockDim(NumberThreadsPerBlockXdim, NumberThreadsPerBlockYdim, NumberThreadsPerBlockZdim);
 
-   	encodingKernel<<<NumberOfBlocks, NumberThreadsPerBlockXdim, NumberThreadsPerBlockYdim>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
    	//encodingKernel<<<NumberOfBlocks, blockDim>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
+   	//encodingKernel<<<NumberOfBlocks, NumberThreadsPerBlockXdim, NumberThreadsPerBlockYdim>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
+
 
 
    	unsigned char cpuEncodedBlock[Rows*Columns*Bands] = {0};
@@ -147,54 +165,54 @@ void Sensor::process()
 
 
 
-   	boost::dynamic_bitset<unsigned char> encodedBits;
+   	//boost::dynamic_bitset<unsigned char> encodedBits;
    	//encodedBits.resize(88);
 
-   	cout << "cpuEncodedBlock=" << hex;
-   	for(int index=0; index<12; index++)
-   	{
-   		cout << int(cpuEncodedBlock[index]);
-   		//encodedBits[index] = cpuEncodedBlock[index];
-   		encodedBits.append(cpuEncodedBlock[index]);
-   	}
-
-   	cout << endl;
-   	cout << "GPGPU:" << encodedBits << endl;
-
-
-
-
-	//  reverses the bit order
-   	//*************************************************************************
-	// Note that this algorithm was largely arrived at empirically. Looking
-	// at the data to see what is correct. Keep this in mind when defining
-	// architectural decisions, and when there may exist reluctance
-	// after prototyping activities.
-	boost::dynamic_bitset<unsigned char> convertedStream;
-    size_t numberOfBytes = encodedBits.size()/BitsPerByte;
-    if(encodedBits.size() % BitsPerByte)
-    {
-    	numberOfBytes++;
-    }
-
-
-	convertedStream.resize(numberOfBytes*BitsPerByte);
-	encodedBits.resize(numberOfBytes*BitsPerByte);
-
-	convertedStream[95] = encodedBits[0];
-
-	for (int bitIndex = 0; bitIndex < encodedBits.size(); bitIndex++)
-	{
-
-		int targetBit = encodedBits.size()-bitIndex-1;
-		int sourceBit = bitIndex;
-
-		convertedStream[targetBit] = encodedBits[sourceBit];
-	}
-
-
-   	cout << "convertedStream:" << convertedStream << endl;
-   	//*************************************************************************
+//   	cout << "cpuEncodedBlock=" << hex;
+//   	for(int index=0; index<12; index++)
+//   	{
+//   		cout << int(cpuEncodedBlock[index]);
+//   		//encodedBits[index] = cpuEncodedBlock[index];
+//   		encodedBits.append(cpuEncodedBlock[index]);
+//   	}
+//
+//   	cout << endl;
+//   	cout << "GPGPU:" << encodedBits << endl;
+//
+//
+//
+//
+//	//  reverses the bit order
+//   	//*************************************************************************
+//	// Note that this algorithm was largely arrived at empirically. Looking
+//	// at the data to see what is correct. Keep this in mind when defining
+//	// architectural decisions, and when there may exist reluctance
+//	// after prototyping activities.
+//	boost::dynamic_bitset<unsigned char> convertedStream;
+//    size_t numberOfBytes = encodedBits.size()/BitsPerByte;
+//    if(encodedBits.size() % BitsPerByte)
+//    {
+//    	numberOfBytes++;
+//    }
+//
+//
+//	convertedStream.resize(numberOfBytes*BitsPerByte);
+//	encodedBits.resize(numberOfBytes*BitsPerByte);
+//
+//	convertedStream[95] = encodedBits[0];
+//
+//	for (int bitIndex = 0; bitIndex < encodedBits.size(); bitIndex++)
+//	{
+//
+//		int targetBit = encodedBits.size()-bitIndex-1;
+//		int sourceBit = bitIndex;
+//
+//		convertedStream[targetBit] = encodedBits[sourceBit];
+//	}
+//
+//
+//   	cout << "convertedStream:" << convertedStream << endl;
+//   	//*************************************************************************
 
 
 //   	myEncodedBitCount += (myWinningEncodedLength + CodeOptionBitFieldFundamentalOrNoComp);
