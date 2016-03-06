@@ -225,8 +225,6 @@ __device__ void bitwiseAnd(unsigned char* byteFirst, unsigned char* byteSecond, 
 //__device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int dataIndex, RiceAlgorithm::CodingSelection &selection, unsigned char* encodedStream)
 __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int dataIndex, RiceAlgorithm::CodingSelection* selection, unsigned char* encodedStream)
 {
-	 RiceAlgorithm::CodingSelection selection2;
-
 	// Apply SplitSequence encoding
 	//=========================================================================================================
 
@@ -248,7 +246,7 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
         if(code_len_temp < code_len)
         {
             code_len = code_len_temp;
-            selection2 = RiceAlgorithm::CodingSelection(k);
+            *selection = RiceAlgorithm::CodingSelection(k);
         }
     }
 
@@ -258,7 +256,7 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     // Get the total encoded size first
     for(int index = dataIndex; index < (dataIndex+32); index++)
     {
-        size_t encodedSize = (inputSamples[index] >> selection2) + 1;
+        size_t encodedSize = (inputSamples[index] >> *selection) + 1;
         encodedSizeList[index-dataIndex] = encodedSize;
         totalEncodedSize += int(encodedSize);
 
@@ -275,30 +273,41 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 
     memset(localEncodedStream, 0, MaximumByteArray);
 
+
     // assign each encoded sample and shift by the next one
     // at the end of the loop, we will assign the last one
     // unsigned char* localEncodedStream(0);
-    //for(int index = (dataIndex+31); index >= 0; index--)
     for(int index = 31; index >= 0; index--)
     {
-//    	//localEncodedStream[totalEncodedSize/BitsInByte] |= 0x1;
+
     	localEncodedStream[0] |= 0x1;
-//    	//localEncodedStream <<= encodedSizeList[index];
-//        //shiftLeft(&localEncodedStream[index-dataIndex], totalEncodedSize, encodedSizeList[index]);
+
     	int shift = encodedSizeList[index];
 
         shiftRight(localEncodedStream, totalEncodedSize, shift);
-      	  //localEncodedStream[0] |= 0x1;
-
-        //if(dataIndex <= 0)
-        //    printf("Line #237, BlockInx=%d totalEncodedSize=%d shift=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, shift, totalEncodedSize, byte_to_binary(localEncodedStream, 81));
 
     }
     //localEncodedStream[0] |= 1;
 
     if(dataIndex <= 0)
-        printf("Line #237, BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, 81));
+        printf("Line #295, BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, 81));
 
+
+	// see Lossless Data Compression, Blue Book, sec 5.1.2
+    // place the code encoding selection
+    //shiftRight(localEncodedStream, totalEncodedSize, int(RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp));
+    unsigned char selectionEncoding[MaximumByteArray] = {0};
+    selectionEncoding[0] = *selection + 1;
+    //shiftLeft(selectionEncoding, MaximumByteArray, (sizeof(unsigned char)*BitsInByte) - int(RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp));
+    bitwiseOr(localEncodedStream, selectionEncoding, MaximumByteArray, localEncodedStream);
+
+
+
+    if(dataIndex <= 0)
+    {
+        printf("Line #309, BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, 81));
+
+    }
 
     // determine number of bytes
     unsigned int numberOfBytes(totalEncodedSize/RiceAlgorithm::BitsPerByte);
@@ -308,10 +317,8 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     }
 
 
-    //if(dataIndex <= 96)
-    //printf("Line #247, BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, numberOfBytes));
 
-    localEncodedStream[0] = 1;
+    //localEncodedStream[0] = 1;
 
 
 
@@ -321,10 +328,10 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     //=========================================================================================================
     // after the zero sequence number that was split off, then we add that value to the stream
     // for each of the samples
-    unsigned short mask = powf(2, selection2) - 1;
+    unsigned short mask = powf(2, *selection) - 1;
 
     const unsigned int MaximumByteAdditionalArray(56); // 14*32/BitsInByte
-    const unsigned int additionalEncodedSize(selection2 * 32 * BitsInByte);
+    const unsigned int additionalEncodedSize(*selection * 32 * BitsInByte);
 
 
     unsigned char encodedSample[MaximumByteAdditionalArray] = {0};
@@ -348,12 +355,12 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
         memcpy(individualEncodedSample, &byteConvert, sizeof(byteConvert));
 
         // This shift aligns the encoding at the beginning of the array
-        shiftLeft(individualEncodedSample, selection2, ((sizeof(byteConvert)*BitsInByte)-selection2));
+        shiftLeft(individualEncodedSample, *selection, ((sizeof(byteConvert)*BitsInByte) - *selection));
 
 
     	//***************************************************
         // This shift aligns the encoding at the proper relative position in the array
-        shiftRight(individualEncodedSample, (selection2*index), (selection2*index));
+        shiftRight(individualEncodedSample, (*selection * index), (*selection * index));
 
 
         // Finally merge the individual sample into this segment of the encoded stream
@@ -362,57 +369,17 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     }
 
     //=========================================================================================================
+    bitwiseOr(localEncodedStream, encodedSample, MaximumByteArray, localEncodedStream);
 
 
     memcpy(&encodedStream[dataIndex], localEncodedStream, numberOfBytes);
 
 
-
-
-
-
-/*
-    // place 1 in least significant bit
-    localEncodedStream[numberOfBytes-1] = 0x80;
-    for(int index = (numberOfBytes-1); index>=0; index--)
-    {
-        shiftRight(localEncodedStream, totalEncodedSize, encodedSizeList[index]);
-        localEncodedStream[numberOfBytes-1] = 0x80;
-    }
-*/
-/*
-    //********************************
-    unsigned char localEncodedStreamTemp[MaximumByteArray] = {0};
-    //localEncodedStreamTemp[numberOfBytes-1] = 0x0f;
-    //localEncodedStreamTemp[0] = 0xaf;
-    //localEncodedStreamTemp[1] = 0xcc;
-    localEncodedStreamTemp[10] |= 0x1;
-    //shiftLeft(localEncodedStreamTemp, totalEncodedSize, 4);
-    //shiftRight(localEncodedStreamTemp, totalEncodedSize, 1);
-    memcpy(&encodedStream[dataIndex], localEncodedStreamTemp, numberOfBytes);
-    //********************************
-*/
-    //memset(&encodedStream[dataIndex], 0, numberOfBytes);
-
-
-//  if(dataIndex==0)
-//	 printf("\nBlock:%d dataIndex=%d threadIdx.x=%d threadIdx.y=%d threadIdx.z=%d\n", blockIdx.x, dataIndex, threadIdx.x, threadIdx.y, threadIdx.z);
-
-//	if(blockIdx.x == 0 && (threadIdx.x == 0) && (threadIdx.y == 0) && (threadIdx.z == 0))
-//	{
-//		printf("\nBlock:%d selection:%d code_len=%d numberOfBytes=%d encoded[next to last]=%x encoded[last]=%x \n", blockIdx.x, selection, code_len, numberOfBytes, encodedStream[dataIndex+30], encodedStream[dataIndex+31]);
-//
-//	}
-
-    // include space for the  code option :TODO: This only happens once
-    //totalEncodedSize += RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp;
-
-	//===========================================================
-
-	//cudaMemcpy(encodedStream, localEncodedStream, code_len);
-
-	//delete [] localEncodedStream;
-
+	if(dataIndex <= 64)
+	{
+		 printf("Line #364, dataIndex=%d gpuEncodedBlocks=%s\n",
+				 dataIndex, byte_to_binary(&encodedStream[dataIndex], numberOfBytes*BitsInByte));
+	}
 
 	return code_len;
 }
@@ -423,45 +390,19 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 __global__ void encodingKernel(ushort inputSamples[32], unsigned char* gpuEncodedBlocks)
 {
 	// Operate on all samples for a given block together
-	//unsigned int sampleIndex = threadIdx.x;
-	//unsigned int dataIndex = (threadIdx.x + blockIdx.y*blockDim.x + blockIdx.z*blockDim.y*blockDim.z);
-	//unsigned int dataIndex = blockIdx.x * 32;
-
-
-//	if(!dataIndex)
-//	//if(blockIdx.x <= 2 && (threadIdx.x == 0) && (threadIdx.y == 0) && (threadIdx.z == 0))
-//	{
-//		for(int index=0; index<32; index++)
-//		{
-//			printf("Block:%d data[%d]=%d\n", blockIdx.x, index, inputSamples[dataIndex+index]);
-//		}
-//	}
 
 	unsigned int dataIndex(0);
-
-//	unsigned int blockId = blockIdx.x + (blockIdx.y * gridDim.x);
-//	unsigned int threadId =  threadIdx.x + (threadIdx.y * blockDim.x);
-//	unsigned int threadsPerBlock = (blockDim.x * blockDim.y);
-//
-//	unsigned int globalIdx = (blockId * threadsPerBlock) + threadId;
-//
-//
-//	//:TODO: calculation of dataIndex still issue -- bad address
-//	if(globalIdx)
-//	{
-//		dataIndex = (globalIdx * 32) - 1;
-//	}
 
 	// http://www.martinpeniak.com/index.php?option=com_content&view=article&catid=17:updates&id=288:cuda-thread-indexing-explained
 	int blockId = blockIdx.x + blockIdx.y * gridDim.x;
 	int threadId = blockId * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) + threadIdx.x;
 
-	//:TODO: calculation of dataIndex still issue -- bad address
+
 	if(threadId)
 	{
 		dataIndex = (threadId * 32) - 1;
 	}
-	else if (threadId >= 196607)
+	else if (threadId >= 196607) // temporary debugging
 	{
 		printf("VERY BAD!!!!! threadId=%d\n", threadId);
 		return;
@@ -469,12 +410,6 @@ __global__ void encodingKernel(ushort inputSamples[32], unsigned char* gpuEncode
 
 
 
-
-
-
-
-//if(dataIndex >= 0 && dataIndex < 64)
-//    printf("dataIndex=%d, blockId=%d, threadId=%d globalIdx=%d\n", dataIndex, blockId, threadId, globalIdx);
 
 	RiceAlgorithm::CodingSelection selection;
 	unsigned int encodedLength(0);
@@ -495,22 +430,38 @@ __global__ void encodingKernel(ushort inputSamples[32], unsigned char* gpuEncode
         //encodedSize = (*iteration)->getEncodedBlockSize();
     }
 
-	//if(!dataIndex)
-	//{
-		//memcpy(gpuEncodedBlocks, gpuEncodedBlocks, winningEncodedLength);
-	   // unsigned char array[] = { 0xAC, 0xFF, 0xCC, 0x55, 0xAC, 0xFF, 0xCC, 0x55, 0xAC, 0xFF, 0xCC, 0x55 };
-       // memcpy(&gpuEncodedBlocks[dataIndex], array,  12);
-
-
-        //cudaMemcpy(gpuEncodedBlocks, array, sizeof(array), cudaMemcpyDeviceToDevice);
-	    //gpuEncodedBlocks[0] = array[0];
-	    //gpuEncodedBlocks[1] = array[1];
-	    //gpuEncodedBlocks[2] = array[2];
-	//}
+//	if(dataIndex == 0)
+//	{
+//
+//		//memcpy(gpuEncodedBlocks, gpuEncodedBlocks, winningEncodedLength);
+//	    unsigned char array[] = { 0xAC, 0xFF, 0xCC, 0x55, 0xAC, 0xFF, 0xCC, 0x55, 0xAC, 0xFF, 0xCC, 0x55 };
+//        //memcpy(&gpuEncodedBlocks[dataIndex], array,  12);
+//
+//
+//        //cudaMemcpy(gpuEncodedBlocks, array, sizeof(array), cudaMemcpyDeviceToDevice);
+//	    gpuEncodedBlocks[0] = array[0];
+//	    gpuEncodedBlocks[1] = array[1];
+//	    gpuEncodedBlocks[2] = array[2];
+//	    gpuEncodedBlocks[3] = array[3];
+//	    gpuEncodedBlocks[4] = array[4];
+//	    gpuEncodedBlocks[5] = array[5];
+//	    gpuEncodedBlocks[6] = array[6];
+//	    gpuEncodedBlocks[7] = array[7];
+//	    gpuEncodedBlocks[8] = array[8];
+//	    gpuEncodedBlocks[9] = array[9];
+//	    gpuEncodedBlocks[10] = array[10];
+//	    gpuEncodedBlocks[11] = array[11];
+//
+//	    printf("Line #455, dataIndex=%d gpuEncodedBlocks=%s\n",
+//				 dataIndex, byte_to_binary(gpuEncodedBlocks, 160));
+//
+//
+//	}
     //*************************************************************
     // Once here, synchronization among all threads should happen
-    // Note that his is only applicable, for threads within a given
+    // Note that this is only applicable, for threads within a given
     // block. But we do not want to return until all are available.
+    // Need to sync on the host.
     //*************************************************************
     __syncthreads();
 

@@ -74,7 +74,6 @@ void Sensor::process()
 	std::vector<AdaptiveEntropyEncoder*>::iterator winningIteration;
 
     CodingSelection winningSelection;
-    boost::dynamic_bitset<> encodedStream;
 
     timestamp_t t0_intermediate, t1_intermediate, t2_intermediate, t3_intermediate;
 
@@ -140,28 +139,49 @@ void Sensor::process()
 
    	encodingKernel<<<gridBlocks, threadsPerBlock>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
 
+   	cudaDeviceSynchronize();
+
+    timestamp_t t3 = getTimestamp();
 
 
-   	// This allocation means 16, 32-sample blocks, for a total of 512 threads/block (6291456 samples)
-   	//const int NumberThreadsPerBlockXdim(32);
-   	//const int NumberThreadsPerBlockYdim(16);
-   	//const int NumberThreadsPerBlockZdim(2);
-   	//const int NumberThreadsPerBlockXdim(1);
-   	//const int NumberThreadsPerBlockYdim(512);
-   	//const int NumberThreadsPerBlockZdim(2);
+    cout << "\nRepresentative intermediate Encoding processing times ==> " << fixed
+            << "\n(intermediate t0-t1): " << fixed << getSecondsDiff(t0_intermediate, t1_intermediate) << " seconds"
+            << "\n(intermediate t1-t2): " << fixed << getSecondsDiff(t1_intermediate, t2_intermediate) << " seconds"
+            << "\n(intermediate t2-t3): " << fixed << getSecondsDiff(t2_intermediate, t3_intermediate) << " seconds\n" << endl;
 
-   	//const int NumberOfBlocks(totalSamples / (NumberThreadsPerBlockXdim * NumberThreadsPerBlockYdim * NumberThreadsPerBlockZdim));
-   	//const int NumberOfBlocks((totalSamples / (NumberThreadsPerBlockXdim * NumberThreadsPerBlockYdim * NumberThreadsPerBlockZdim))/32);
-
-   	//dim3 blockDim(NumberThreadsPerBlockXdim, NumberThreadsPerBlockYdim, NumberThreadsPerBlockZdim);
-
-   	//encodingKernel<<<NumberOfBlocks, blockDim>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
-   	//encodingKernel<<<NumberOfBlocks, NumberThreadsPerBlockXdim, NumberThreadsPerBlockYdim>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
-
-
+    cout << "Encoding processing time ==> " << fixed << getSecondsDiff(t2, t3) << " seconds"<< endl;
 
    	unsigned char cpuEncodedBlock[Rows*Columns*Bands] = {0};
    	CUDA_CHECK_RETURN(cudaMemcpy(cpuEncodedBlock, gpuEncodedBlocks, (Rows*Columns*Bands), cudaMemcpyDeviceToHost));
+
+
+   	cout << "cpuEncodedBlock[0]=0x" << hex << int(cpuEncodedBlock[0]) << " cpuEncodedBlock[1]=0x" << int(cpuEncodedBlock[1])
+   	     << " cpuEncodedBlock[2]=0x" << int(cpuEncodedBlock[2])
+   	     << " cpuEncodedBlock[3]=0x" << int(cpuEncodedBlock[3])
+   	     << " cpuEncodedBlock[4]=0x" << int(cpuEncodedBlock[4])
+   	     << " cpuEncodedBlock[5]=0x" << int(cpuEncodedBlock[5])
+   	     << " cpuEncodedBlock[6]=0x" << int(cpuEncodedBlock[6])
+   	     << endl;
+    cudaFree(gpuEncodedBlocks);
+
+
+
+
+    boost::dynamic_bitset<unsigned char> encodedStream;
+
+    //for(int i=0; i<(encodedStream.size()/BitsPerByte); i++) // TODO: this is not accurate on the encoded size
+    for(int i=0; i<(sizeof(cpuEncodedBlock)); i+=32)
+    {
+    	packCompressedData(cpuEncodedBlock[i], encodedStream);
+
+
+    }
+
+
+    writeCompressedData(encodedStream);
+
+
+
 
 
 
@@ -311,15 +331,6 @@ void Sensor::process()
 ////
 ////    }
 ////
-    timestamp_t t3 = getTimestamp();
-
-
-    cout << "\nRepresentative intermediate Encoding processing times ==> " << fixed
-            << "\n(intermediate t0-t1): " << fixed << getSecondsDiff(t0_intermediate, t1_intermediate) << " seconds"
-            << "\n(intermediate t1-t2): " << fixed << getSecondsDiff(t1_intermediate, t2_intermediate) << " seconds"
-            << "\n(intermediate t2-t3): " << fixed << getSecondsDiff(t2_intermediate, t3_intermediate) << " seconds\n" << endl;
-
-    cout << "Encoding processing time ==> " << fixed << getSecondsDiff(t2, t3) << " seconds"<< endl;
 //
 
 

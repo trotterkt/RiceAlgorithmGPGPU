@@ -58,29 +58,13 @@ void initialize(float *data, unsigned size)
 
 int main(void)
 {
-	//=====================================================
 
+	//=====================================================
     cout.precision(4);
 
     cout << "Compressing Landsat_agriculture-u16be-6x1024x1024..." << endl;
 
     FileBasedImagePersistence image("Landsat_agriculture-u16be-6x1024x1024", Rows, Columns, Bands);
-
-
-    // This data has not been pre-processed. Need to decide if the pre-processor will be
-    // placed on the GPGPU -- if so, needs to be un-associated from the Sensor type
-
-//    ushort* hostImagePtr = image.getSampleData(1);
-//
-//
-//    ushort *gpuRawImageData;
-//
-//	const int NumberOfSamples(Rows * Columns * Bands);
-//
-//
-//	CUDA_CHECK_RETURN(cudaMalloc((void **)&gpuRawImageData, sizeof(ushort)*NumberOfSamples));
-//	CUDA_CHECK_RETURN(cudaMemcpy(gpuRawImageData, hostImagePtr, sizeof(ushort)*NumberOfSamples, cudaMemcpyHostToDevice));
-
 
 
     // Construct my LandSat sensor, which performs the compression of the supplied
@@ -92,23 +76,8 @@ int main(void)
 
     //=====================================================
 
-//	static const int WORK_SIZE = 65530;
-//	float *data = new float[WORK_SIZE];
-//
-//	initialize (data, WORK_SIZE);
-//
-//	float *recCpu = cpuReciprocal(data, WORK_SIZE);
-//	float *recGpu = gpuReciprocal(data, WORK_SIZE);
-//	float cpuSum = std::accumulate (recCpu, recCpu+WORK_SIZE, 0.0);
-//	float gpuSum = std::accumulate (recGpu, recGpu+WORK_SIZE, 0.0);
-//
-//	/* Verify the results */
-//	std::cout<<"gpuSum = "<<gpuSum<< " cpuSum = " <<cpuSum<<std::endl;
-//
-//	/* Free memory */
-//	delete[] data;
-//	delete[] recCpu;
-//	delete[] recGpu;
+    // Write out the encoded data. This is outside of the compression processing
+    image.writeEncodedData();
 
 	cudaDeviceReset();
 

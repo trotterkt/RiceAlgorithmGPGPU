@@ -54,12 +54,10 @@
 			</storageModule>
 			<storageModule moduleId="com.nvidia.cuda.ide.build.project.ICudaProjectConfiguration">
 				<executable devicelink="false">
-					<ptx major="5" minor="3"/>
-					<sass major="5" minor="3"/>
 					<sass major="5" minor="2"/>
 					<ptx major="5" minor="2"/>
 				</executable>
-				<editor-arch major="5" minor="3"/>
+				<editor-arch major="5" minor="2"/>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
@@ -143,4 +141,5 @@
 			<resource resourceType="PROJECT" workspacePath="/RiceAlgorithmGPGPU"/>
 		</configuration>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>
