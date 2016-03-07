@@ -138,7 +138,9 @@ void Sensor::process()
    	//
    	//
    	//========================================================================
-   	dim3 threadsPerBlock(32, 32);
+   	dim3 threadsPerBlock(32, 32); // Threads per block will be limited by the 
+   	                              // CC of the GPGPU 
+   	                              // (i.e. lower CC only allow 256 threads per block)
    	dim3 gridBlocks(6, 32);
 
    	encodingKernel<<<gridBlocks, threadsPerBlock>>> (d_PreProcessedImageData, d_EncodedBlocks);
@@ -156,6 +158,7 @@ void Sensor::process()
     cout << "Encoding processing time ==> " << fixed << getSecondsDiff(t2, t3) << " seconds"<< endl;
 
    	unsigned char h_EncodedBlock[Rows*Columns*Bands] = {0};
+   	//:TODO: should be sized as: sizeof(ushort) * (Rows*Columns*Bands)
    	CUDA_CHECK_RETURN(cudaMemcpy(h_EncodedBlock, d_EncodedBlocks, (Rows*Columns*Bands), cudaMemcpyDeviceToHost));
 
     for(int index=0; index<30; index+=3)

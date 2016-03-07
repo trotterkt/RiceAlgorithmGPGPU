@@ -375,6 +375,9 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 
     bitwiseOr(localEncodedStream, encodedSample, MaximumByteArray, localEncodedStream);
 
+    //:TODO: Another possible source of device to host transfer problem
+    // I think the data is already segmented in 32 sample blocks
+    // memcpy(&encodedDataPtr[dataIndex], localEncodedStream, numberOfBytes);
 
     unsigned char* encodedDataPtr = &encodedStream[dataIndex];
 
@@ -405,6 +408,12 @@ __global__ void encodingKernel(ushort inputSamples[32], unsigned char* gpuEncode
 	int blockId = blockIdx.x + blockIdx.y * gridDim.x;
 	int threadId = blockId * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) + threadIdx.x;
 
+
+	// 3 possible sources of issue:
+	//  (1) operate on the actual data type (ushort)
+	//  (2) may need to create local pointer of gpu memory to operate on -
+	//        ushort* gpuEncodedPtr = (ushort*) gpuEncodedBlocks;
+	//  (3) operate on threadId instead of dataIndex
 
 	if(threadId)
 	{
