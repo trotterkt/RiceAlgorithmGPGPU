@@ -369,16 +369,24 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     }
 
     //=========================================================================================================
+
+    shiftRight(encodedSample, MaximumByteAdditionalArray, totalEncodedSize);
+    totalEncodedSize += (32 * *selection);
+
     bitwiseOr(localEncodedStream, encodedSample, MaximumByteArray, localEncodedStream);
 
 
-    memcpy(&encodedStream[dataIndex], localEncodedStream, numberOfBytes);
+    unsigned char* encodedDataPtr = &encodedStream[dataIndex];
+
+    memcpy(encodedDataPtr, localEncodedStream, numberOfBytes);
 
 
 	if(dataIndex <= 64)
 	{
-		 printf("Line #364, dataIndex=%d gpuEncodedBlocks=%s\n",
-				 dataIndex, byte_to_binary(&encodedStream[dataIndex], numberOfBytes*BitsInByte));
+		 printf("Line #382, dataIndex  =%2d   gpuEncodedBlocks =%s\n",
+				 dataIndex, byte_to_binary(encodedDataPtr, numberOfBytes*BitsInByte));
+		 printf("Line #384, dataIndex  =%2d localEncodedStream =%s\n",
+				 dataIndex, byte_to_binary(localEncodedStream, numberOfBytes*BitsInByte));
 	}
 
 	return code_len;

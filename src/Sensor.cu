@@ -11,6 +11,7 @@
 
 #include <Sensor.h>
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <math.h>
 #include <limits.h>
@@ -95,24 +96,27 @@ void Sensor::process()
     long totalSamples = myXDimension*myYDimension*myZDimension;
 
 
+    // Note convention of specifying host memory prefixed by 'h_' and device by 'd_'
+
+
     // Place the pre-processed data on the GPU
     //:TODO: This probably better belongs in the Predictor constructor and
     // freed in the destructor - in other words what would be expected in
     // C++ programs
     //***************************************************************************
-    ushort *gpuPreProcessedImageData;
+    ushort *d_PreProcessedImageData;
 
 
-   	CUDA_CHECK_RETURN(cudaMalloc((void **)&gpuPreProcessedImageData, sizeof(ushort)*totalSamples));
-   	CUDA_CHECK_RETURN(cudaMemcpy(gpuPreProcessedImageData, residualsPtr, sizeof(ushort)*totalSamples, cudaMemcpyHostToDevice));
+   	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_PreProcessedImageData, sizeof(ushort)*totalSamples));
+   	CUDA_CHECK_RETURN(cudaMemcpy(d_PreProcessedImageData, residualsPtr, sizeof(ushort)*totalSamples, cudaMemcpyHostToDevice));
 
 
 
    	// total samples (1024*1024*6) / 32 sample blocks  = 196608
     // Allocate space for the encoded blocks at one time. Include 1 byte at the start of
    	// every 32 bytes for the encoded size
-    unsigned char* gpuEncodedBlocks(0);
-   	CUDA_CHECK_RETURN(cudaMalloc((void **)&gpuEncodedBlocks, sizeof(ushort)*(Rows*Columns*Bands)));
+    unsigned char* d_EncodedBlocks(0);
+   	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_EncodedBlocks, sizeof(ushort)*(Rows*Columns*Bands)));
     //***************************************************************************
 
     //:TODO: This is one of the 1st places where we will start looking
@@ -137,7 +141,7 @@ void Sensor::process()
    	dim3 threadsPerBlock(32, 32);
    	dim3 gridBlocks(6, 32);
 
-   	encodingKernel<<<gridBlocks, threadsPerBlock>>> (gpuPreProcessedImageData, gpuEncodedBlocks);
+   	encodingKernel<<<gridBlocks, threadsPerBlock>>> (d_PreProcessedImageData, d_EncodedBlocks);
 
    	cudaDeviceSynchronize();
 
@@ -151,18 +155,16 @@ void Sensor::process()
 
     cout << "Encoding processing time ==> " << fixed << getSecondsDiff(t2, t3) << " seconds"<< endl;
 
-   	unsigned char cpuEncodedBlock[Rows*Columns*Bands] = {0};
-   	CUDA_CHECK_RETURN(cudaMemcpy(cpuEncodedBlock, gpuEncodedBlocks, (Rows*Columns*Bands), cudaMemcpyDeviceToHost));
+   	unsigned char h_EncodedBlock[Rows*Columns*Bands] = {0};
+   	CUDA_CHECK_RETURN(cudaMemcpy(h_EncodedBlock, d_EncodedBlocks, (Rows*Columns*Bands), cudaMemcpyDeviceToHost));
 
-
-   	cout << "cpuEncodedBlock[0]=0x" << hex << int(cpuEncodedBlock[0]) << " cpuEncodedBlock[1]=0x" << int(cpuEncodedBlock[1])
-   	     << " cpuEncodedBlock[2]=0x" << int(cpuEncodedBlock[2])
-   	     << " cpuEncodedBlock[3]=0x" << int(cpuEncodedBlock[3])
-   	     << " cpuEncodedBlock[4]=0x" << int(cpuEncodedBlock[4])
-   	     << " cpuEncodedBlock[5]=0x" << int(cpuEncodedBlock[5])
-   	     << " cpuEncodedBlock[6]=0x" << int(cpuEncodedBlock[6])
-   	     << endl;
-    cudaFree(gpuEncodedBlocks);
+    for(int index=0; index<30; index+=3)
+    {
+    	cout << "h_EncodedBlock[" << index << "]=0x" << hex << setw(2) << setfill('0') << int(h_EncodedBlock[index]) << " h_EncodedBlock[" << index+1 << "]=0x" << setw(2) << setfill('0') << int(h_EncodedBlock[index+1]) << endl;
+    	cout << "h_EncodedBlock[" << index+2 << "]=0x" << hex << setw(2) << setfill('0') << int(h_EncodedBlock[index+2]) << " h_EncodedBlock[" << index+3 << "]=0x" << setw(2) << setfill('0') << int(h_EncodedBlock[index+3]) << endl;
+    	cout << "h_EncodedBlock[" << index+4 << "]=0x" << hex << setw(2) << setfill('0') << int(h_EncodedBlock[index+4]) << " h_EncodedBlock[" << index+5 << "]=0x" << setw(2) << setfill('0') << int(h_EncodedBlock[index+5]) << endl;
+    }
+    cudaFree(d_EncodedBlocks);
 
 
 
@@ -170,10 +172,9 @@ void Sensor::process()
     boost::dynamic_bitset<unsigned char> encodedStream;
 
     //for(int i=0; i<(encodedStream.size()/BitsPerByte); i++) // TODO: this is not accurate on the encoded size
-    for(int i=0; i<(sizeof(cpuEncodedBlock)); i+=32)
+    for(int i=0; i<(sizeof(h_EncodedBlock)); i+=32)
     {
-    	packCompressedData(cpuEncodedBlock[i], encodedStream);
-
+    	packCompressedData(h_EncodedBlock[i], encodedStream);
 
     }
 
