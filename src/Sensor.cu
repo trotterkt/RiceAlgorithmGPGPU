@@ -163,19 +163,26 @@ void Sensor::process()
 
     for(int index=0; index<30; index+=3)
     {
-    	cout << "h_EncodedBlock[" << index << "]=0x" << hex << setw(2) << setfill('0') << int(h_EncodedBlock[index]) << " h_EncodedBlock[" << index+1 << "]=0x" << setw(2) << setfill('0') << int(h_EncodedBlock[index+1]) << endl;
-    	cout << "h_EncodedBlock[" << index+2 << "]=0x" << hex << setw(2) << setfill('0') << int(h_EncodedBlock[index+2]) << " h_EncodedBlock[" << index+3 << "]=0x" << setw(2) << setfill('0') << int(h_EncodedBlock[index+3]) << endl;
-    	cout << "h_EncodedBlock[" << index+4 << "]=0x" << hex << setw(2) << setfill('0') << int(h_EncodedBlock[index+4]) << " h_EncodedBlock[" << index+5 << "]=0x" << setw(2) << setfill('0') << int(h_EncodedBlock[index+5]) << endl;
+    	cout << "h_EncodedBlock[" << dec << index << "]=0x" << hex << setw(2) << setfill('0') << int(h_EncodedBlock[index]) << " h_EncodedBlock["<< dec << index+1 << "]=0x" << dec << setw(2) << setfill('0') << int(h_EncodedBlock[index+1]) << endl;
+    	cout << "h_EncodedBlock[" << dec << index+2 << "]=0x" << hex << setw(2) << setfill('0') << int(h_EncodedBlock[index+2]) << " h_EncodedBlock[" << dec << index+3 << "]=0x" << dec << setw(2) << setfill('0') << int(h_EncodedBlock[index+3]) << endl;
+    	cout << "h_EncodedBlock[" << dec << index+4 << "]=0x" << hex << setw(2) << setfill('0') << int(h_EncodedBlock[index+4]) << " h_EncodedBlock[" << dec << index+5 << "]=0x" << dec << setw(2) << setfill('0') << int(h_EncodedBlock[index+5]) << endl;
     }
     cudaFree(d_EncodedBlocks);
 
-
-
+    //===========================================================
+    cout << "Debug encoded stream on host - ";
+    for(int i=0; i<11; i++)
+    {
+    	boost::dynamic_bitset<unsigned char> debugEncodedStream(8, h_EncodedBlock[i]);
+    	cout << debugEncodedStream;
+    }
+	cout << endl;
+    //===========================================================
 
     boost::dynamic_bitset<unsigned char> encodedStream;
 
     //for(int i=0; i<(encodedStream.size()/BitsPerByte); i++) // TODO: this is not accurate on the encoded size
-    for(int i=0; i<(sizeof(h_EncodedBlock)); i+=32)
+    for(int i=0; i<(sizeof(h_EncodedBlock)); i++)
     {
     	packCompressedData(h_EncodedBlock[i], encodedStream);
 

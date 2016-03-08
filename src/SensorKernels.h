@@ -398,7 +398,7 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 /**
  * CUDA kernel that identifies the winning encoding scheme for each block
  */
-__global__ void encodingKernel(ushort inputSamples[32], unsigned char* gpuEncodedBlocks)
+__global__ void encodingKernel(ushort* inputSamples, unsigned char* gpuEncodedBlocks)
 {
 	// Operate on all samples for a given block together
 
