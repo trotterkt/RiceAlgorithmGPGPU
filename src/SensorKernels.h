@@ -289,8 +289,8 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     }
     //localEncodedStream[0] |= 1;
 
-    if(dataIndex <= 0)
-        printf("Line #295, BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, 81));
+    if(dataIndex <= 96)
+        printf("Line #295, BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, totalEncodedSize));
 
 
 	// see Lossless Data Compression, Blue Book, sec 5.1.2
@@ -384,13 +384,13 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     memcpy(encodedDataPtr, localEncodedStream, numberOfBytes);
 
 
-	if(dataIndex <= 64)
-	{
-		 printf("Line #382, dataIndex  =%2d   gpuEncodedBlocks =%s\n",
-				 dataIndex, byte_to_binary(encodedDataPtr, numberOfBytes*BitsInByte));
-		 printf("Line #384, dataIndex  =%2d localEncodedStream =%s\n",
-				 dataIndex, byte_to_binary(localEncodedStream, numberOfBytes*BitsInByte));
-	}
+//	if(dataIndex <= 64)
+//	{
+//		 printf("Line #382, dataIndex  =%2d   gpuEncodedBlocks =%s\n",
+//				 dataIndex, byte_to_binary(encodedDataPtr, numberOfBytes*BitsInByte));
+//		 printf("Line #384, dataIndex  =%2d localEncodedStream =%s\n",
+//				 dataIndex, byte_to_binary(localEncodedStream, numberOfBytes*BitsInByte));
+//	}
 
 	return code_len;
 }
@@ -408,6 +408,15 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* gpuEncodedBl
 	int blockId = blockIdx.x + blockIdx.y * gridDim.x;
 	int threadId = blockId * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) + threadIdx.x;
 
+//***************************************
+if(threadId > 4) return; // DEBUGGING
+if(threadId <= 100)
+	printf("threadId=%d\n", threadId);
+//***************************************
+
+dataIndex = threadId;
+
+	//return;
 
 	// 3 possible sources of issue:
 	//  (1) operate on the actual data type (ushort)
@@ -417,7 +426,7 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* gpuEncodedBl
 
 	if(threadId)
 	{
-		dataIndex = (threadId * 32) - 1;
+		//dataIndex = (threadId % 196608);
 	}
 	else if (threadId >= 196607) // temporary debugging
 	{
@@ -434,7 +443,7 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* gpuEncodedBl
 	RiceAlgorithm::CodingSelection winningSelection;
 
 	// Apply SplitSequence encoding
-	encodedLength = splitSequenceEncoding(inputSamples, dataIndex, &selection, gpuEncodedBlocks);
+	encodedLength = splitSequenceEncoding(inputSamples, dataIndex*32, &selection, gpuEncodedBlocks);  // index by the block size or 32
 
 	// Find the winning encoding for all encoding types
     // This basically determines the winner
@@ -447,8 +456,8 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* gpuEncodedBl
         //encodedSize = (*iteration)->getEncodedBlockSize();
     }
 
-//	if(dataIndex == 0)
-//	{
+	if(dataIndex <= 5)
+	{
 //
 //		//memcpy(gpuEncodedBlocks, gpuEncodedBlocks, winningEncodedLength);
 //	    unsigned char array[] = { 0xAC, 0xFF, 0xCC, 0x55, 0xAC, 0xFF, 0xCC, 0x55, 0xAC, 0xFF, 0xCC, 0x55 };
@@ -469,11 +478,11 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* gpuEncodedBl
 //	    gpuEncodedBlocks[10] = array[10];
 //	    gpuEncodedBlocks[11] = array[11];
 //
-//	    printf("Line #455, dataIndex=%d gpuEncodedBlocks=%s\n",
-//				 dataIndex, byte_to_binary(gpuEncodedBlocks, 160));
+	    printf("Line #472, dataIndex=%d gpuEncodedBlocks=%s\n",
+				 dataIndex, byte_to_binary(gpuEncodedBlocks, 81));
 //
 //
-//	}
+	}
     //*************************************************************
     // Once here, synchronization among all threads should happen
     // Note that this is only applicable, for threads within a given

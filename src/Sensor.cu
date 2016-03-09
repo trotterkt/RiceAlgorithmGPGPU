@@ -177,6 +177,13 @@ void Sensor::process()
     	cout << debugEncodedStream;
     }
 	cout << endl;
+    cout << "Debug encoded stream on host - ";
+    for(int i=11; i<51; i++)
+    {
+    	boost::dynamic_bitset<unsigned char> debugEncodedStream(8, h_EncodedBlock[i]);
+    	cout << debugEncodedStream;
+    }
+	cout << endl;
     //===========================================================
 
     boost::dynamic_bitset<unsigned char> encodedStream;
