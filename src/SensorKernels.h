@@ -45,7 +45,7 @@ __device__ const char *byte_to_binary(unsigned char* x, int numberOfBits)
 {
     const int MaximumBitLength(504);
 
-    __shared__ static char b[MaximumBitLength];
+    char b[MaximumBitLength];
 
     b[0] = '\0';
 
@@ -289,8 +289,6 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     }
     //localEncodedStream[0] |= 1;
 
-    if(dataIndex <= 96)
-        printf("Line #295, BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, totalEncodedSize));
 
 
 	// see Lossless Data Compression, Blue Book, sec 5.1.2
@@ -303,10 +301,9 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 
 
 
-    if(dataIndex <= 0)
+    if(dataIndex <= 96)
     {
-        printf("Line #309, BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, 81));
-
+        printf("Line #306, BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, 81));
     }
 
     // determine number of bytes
@@ -317,10 +314,7 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     }
 
 
-
     //localEncodedStream[0] = 1;
-
-
 
     //=========================================================================================================
 
@@ -343,13 +337,7 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
         unsigned short maskedSample = inputSamples[index+dataIndex] & mask;
         unsigned char byteConvert[2] = {((maskedSample&0xff00)>>8), (maskedSample&0xff)}; //:KLUDGE: need to change the number into
                                                                                           // a byte form for printing only -- endian issue?
-        //(*(reinterpret_cast<unsigned short*>(&byteConvert))) <<= ((sizeof(byteConvert)*BitsInByte)-selection);
-        //==========================================================================================================
-//        if(dataIndex <= 0)
-//            printf("Line #298, maskedSample(%d)(%d)(0x%0x)=%s\n",
-//                    index, maskedSample, inputSamples[index+dataIndex], byte_to_binary(byteConvert, 16));
-//        cout << "Line #298, maskedSample(" << dec << index << ")(" << maskedSample << ")(0x" << hex << inputSamples[index+dataIndex] << ")=" << endl;
-        //==========================================================================================================
+
         memset(individualEncodedSample, 0, sizeof(individualEncodedSample));
 
         memcpy(individualEncodedSample, &byteConvert, sizeof(byteConvert));
@@ -375,6 +363,10 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 
     bitwiseOr(localEncodedStream, encodedSample, MaximumByteArray, localEncodedStream);
 
+    // :TODO: Unclear why offset still exists
+    shiftLeft(localEncodedStream, MaximumByteArray, RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp);
+
+
     //:TODO: Another possible source of device to host transfer problem
     // I think the data is already segmented in 32 sample blocks
     // memcpy(&encodedDataPtr[dataIndex], localEncodedStream, numberOfBytes);
@@ -383,14 +375,6 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 
     memcpy(encodedDataPtr, localEncodedStream, numberOfBytes);
 
-
-//	if(dataIndex <= 64)
-//	{
-//		 printf("Line #382, dataIndex  =%2d   gpuEncodedBlocks =%s\n",
-//				 dataIndex, byte_to_binary(encodedDataPtr, numberOfBytes*BitsInByte));
-//		 printf("Line #384, dataIndex  =%2d localEncodedStream =%s\n",
-//				 dataIndex, byte_to_binary(localEncodedStream, numberOfBytes*BitsInByte));
-//	}
 
 	return code_len;
 }
@@ -409,32 +393,21 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* gpuEncodedBl
 	int threadId = blockId * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) + threadIdx.x;
 
 //***************************************
-if(threadId > 4) return; // DEBUGGING
-if(threadId <= 100)
-	printf("threadId=%d\n", threadId);
+//if(threadId > 4) return; // DEBUGGING
 //***************************************
 
-dataIndex = threadId;
-
-	//return;
-
-	// 3 possible sources of issue:
-	//  (1) operate on the actual data type (ushort)
-	//  (2) may need to create local pointer of gpu memory to operate on -
-	//        ushort* gpuEncodedPtr = (ushort*) gpuEncodedBlocks;
-	//  (3) operate on threadId instead of dataIndex
-
-	if(threadId)
-	{
-		//dataIndex = (threadId % 196608);
-	}
-	else if (threadId >= 196607) // temporary debugging
-	{
-		printf("VERY BAD!!!!! threadId=%d\n", threadId);
-		return;
-	}
+	dataIndex = threadId;
 
 
+//	if(threadId)
+//	{
+//		//dataIndex = (threadId % 196608);
+//	}
+//	else if (threadId >= 196607) // temporary debugging
+//	{
+//		printf("VERY BAD!!!!! threadId=%d\n", threadId);
+//		return;
+//	}
 
 
 	RiceAlgorithm::CodingSelection selection;
@@ -456,32 +429,10 @@ dataIndex = threadId;
         //encodedSize = (*iteration)->getEncodedBlockSize();
     }
 
-	if(dataIndex <= 5)
+	if(dataIndex <= 7)
 	{
-//
-//		//memcpy(gpuEncodedBlocks, gpuEncodedBlocks, winningEncodedLength);
-//	    unsigned char array[] = { 0xAC, 0xFF, 0xCC, 0x55, 0xAC, 0xFF, 0xCC, 0x55, 0xAC, 0xFF, 0xCC, 0x55 };
-//        //memcpy(&gpuEncodedBlocks[dataIndex], array,  12);
-//
-//
-//        //cudaMemcpy(gpuEncodedBlocks, array, sizeof(array), cudaMemcpyDeviceToDevice);
-//	    gpuEncodedBlocks[0] = array[0];
-//	    gpuEncodedBlocks[1] = array[1];
-//	    gpuEncodedBlocks[2] = array[2];
-//	    gpuEncodedBlocks[3] = array[3];
-//	    gpuEncodedBlocks[4] = array[4];
-//	    gpuEncodedBlocks[5] = array[5];
-//	    gpuEncodedBlocks[6] = array[6];
-//	    gpuEncodedBlocks[7] = array[7];
-//	    gpuEncodedBlocks[8] = array[8];
-//	    gpuEncodedBlocks[9] = array[9];
-//	    gpuEncodedBlocks[10] = array[10];
-//	    gpuEncodedBlocks[11] = array[11];
-//
-	    printf("Line #472, dataIndex=%d gpuEncodedBlocks=%s\n",
-				 dataIndex, byte_to_binary(gpuEncodedBlocks, 81));
-//
-//
+	    printf("Line #430, (encodedLength=%d) dataIndex=%d gpuEncodedBlocks=%s\n",
+	    		encodedLength, dataIndex, byte_to_binary(&gpuEncodedBlocks[dataIndex*32], encodedLength));
 	}
     //*************************************************************
     // Once here, synchronization among all threads should happen
@@ -490,8 +441,6 @@ dataIndex = threadId;
     // Need to sync on the host.
     //*************************************************************
     __syncthreads();
-
-
 }
 
 
