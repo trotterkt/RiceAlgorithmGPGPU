@@ -81,7 +81,7 @@ __device__ void shiftRight(unsigned char* array, unsigned int bitSize, unsigned 
 	// Decide where in the copy the new bytes will go
 	//unsigned char* arrayCopy = new unsigned char[numberOfBytes];
 	// Not allocating from global memory is significantly faster
-	const int MaximumByteArray(56);
+	const int MaximumByteArray(80);
 	unsigned char arrayCopy[MaximumByteArray] = {0};
 
 	// Shift from bit to bit, and byte to byte
@@ -148,7 +148,7 @@ __device__ void shiftLeft(unsigned char* array, unsigned int bitSize, unsigned i
 	// Decide where in the copy the new bytes will go
 	//unsigned char* arrayCopy = new unsigned char[numberOfBytes];
 	// Not allocating from global memory is significantly faster
-	const int MaximumByteArray(56);
+	const int MaximumByteArray(80);
 	unsigned char arrayCopy[MaximumByteArray] = {0};
 
 	memset(arrayCopy, 0, sizeof(arrayCopy));
@@ -207,9 +207,10 @@ __device__ void shiftLeft(unsigned char* array, unsigned int bitSize, unsigned i
 
 __device__ void bitwiseOr(unsigned char* byteFirst, unsigned char* byteSecond, unsigned int numberOfBytes, unsigned char* outByte)
 {
+
     for(int i=0; i<numberOfBytes; i++)
     {
-       outByte[i] =  byteFirst[i] | byteSecond[i];
+        outByte[i] =  byteFirst[i] | byteSecond[i];
     }
 }
 
@@ -267,7 +268,7 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 
 
 	// Not allocating from global memory is significantly faster
-	const int MaximumByteArray(50);
+	const int MaximumByteArray(80);
     unsigned char localEncodedStream[MaximumByteArray];
     //=========================================================================================================
 
@@ -306,12 +307,6 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
         printf("Line #306, BlockInx=%d totalEncodedSize=%d encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, totalEncodedSize, byte_to_binary(localEncodedStream, 81));
     }
 
-    // determine number of bytes
-    unsigned int numberOfBytes(totalEncodedSize/RiceAlgorithm::BitsPerByte);
-    if(totalEncodedSize%RiceAlgorithm::BitsPerByte)
-    {
-    	numberOfBytes++;
-    }
 
 
     //localEncodedStream[0] = 1;
@@ -328,8 +323,11 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
     const unsigned int additionalEncodedSize(*selection * 32 * BitsInByte);
 
 
-    unsigned char encodedSample[MaximumByteAdditionalArray] = {0};
-    unsigned char individualEncodedSample[MaximumByteAdditionalArray];
+    //unsigned char encodedSample[MaximumByteAdditionalArray] = {0};
+    unsigned char encodedSample[MaximumByteArray] = {0};
+    unsigned char individualEncodedSample[MaximumByteArray];
+
+    totalEncodedSize += (32 * *selection);
 
 
     for(int index = 0; index < 32; index++)
@@ -340,31 +338,71 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 
         memset(individualEncodedSample, 0, sizeof(individualEncodedSample));
 
-        memcpy(individualEncodedSample, &byteConvert, sizeof(byteConvert));
+        //memcpy(individualEncodedSample, &byteConvert, sizeof(byteConvert));
 
         // This shift aligns the encoding at the beginning of the array
-        shiftLeft(individualEncodedSample, *selection, ((sizeof(byteConvert)*BitsInByte) - *selection));
+        //shiftLeft(individualEncodedSample, *selection, ((sizeof(byteConvert)*BitsInByte) - *selection));
 
 
     	//***************************************************
         // This shift aligns the encoding at the proper relative position in the array
-        shiftRight(individualEncodedSample, (*selection * index), (*selection * index));
+        //shiftRight(individualEncodedSample, (*selection * index), (*selection * index));
+        //shiftRight(individualEncodedSample, MaximumByteAdditionalArray*BitsInByte, (*selection * index));
+        //memcpy(&individualEncodedSample[(*selection * index)/BitsInByte], byteConvert, sizeof(byteConvert));
+        memcpy(individualEncodedSample, byteConvert, sizeof(byteConvert));
+
+        shiftRight(individualEncodedSample, totalEncodedSize, ((*selection * index)));
+        shiftLeft(individualEncodedSample, totalEncodedSize,  (BitsInByte*sizeof(byteConvert)) - *selection);
+
+        //shiftLeft(individualEncodedSample, MaximumByteArray,  6);
+
+//        if(dataIndex <= 0 && index >=6)
+//        {
+//             printf("index=%3d,  maskedSample=%3x byteConvert[0]=%2x byteConvert[1]=%2x totalEncodedSize=%d   individualEncodedSample=%s\n", index, maskedSample, byteConvert[0], byteConvert[1], (totalEncodedSize), byte_to_binary(individualEncodedSample, totalEncodedSize));
+//        }
 
 
         // Finally merge the individual sample into this segment of the encoded stream
-        bitwiseOr(encodedSample, individualEncodedSample, MaximumByteAdditionalArray, encodedSample);
+        bitwiseOr(encodedSample, individualEncodedSample, MaximumByteArray, encodedSample);
+
+//        if(dataIndex <= 0 && index >=6)
+//         {
+//             printf("index=%3d, shifRight=%2d maskedSample=0x%3x totalEncodedSize=%d                                  encodedSample=%s\n", index, (*selection * index), maskedSample, (totalEncodedSize), byte_to_binary(encodedSample, totalEncodedSize));
+//         }
 
     }
 
     //=========================================================================================================
 
-    shiftRight(encodedSample, MaximumByteAdditionalArray, totalEncodedSize);
-    totalEncodedSize += (32 * *selection);
-
-    bitwiseOr(localEncodedStream, encodedSample, MaximumByteArray, localEncodedStream);
+    // determine number of bytes
+    unsigned int numberOfBytes(totalEncodedSize/RiceAlgorithm::BitsPerByte);
+    if(totalEncodedSize%RiceAlgorithm::BitsPerByte)
+    {
+    	numberOfBytes++;
+    }
 
     // :TODO: Unclear why offset still exists
-    shiftLeft(localEncodedStream, MaximumByteArray, RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp);
+    shiftLeft(localEncodedStream, numberOfBytes*BitsInByte, RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp);
+
+    //shiftRight(encodedSample, MaximumByteAdditionalArray, (totalEncodedSize - (32 * *selection)));
+    shiftRight(encodedSample, totalEncodedSize, (totalEncodedSize - (32 * *selection)));
+
+//    if(dataIndex <= 0)
+//     {
+//         printf("LAST:  totalEncodedSize=%d       encodedSample=%s\n", (totalEncodedSize), byte_to_binary(encodedSample, totalEncodedSize));
+//     }
+//
+//    if(dataIndex <= 0)
+//    printf("BEFORE: totalEncodedSize=%d localEncodedStream=%s\n", (totalEncodedSize), byte_to_binary(localEncodedStream, totalEncodedSize));
+
+    bitwiseOr(localEncodedStream, encodedSample, numberOfBytes, localEncodedStream);
+
+//    if(dataIndex <= 0)
+//    printf("FINAL : totalEncodedSize=%d localEncodedStream=%s\n", (totalEncodedSize), byte_to_binary(localEncodedStream, totalEncodedSize));
+
+
+    // :TODO: Unclear why offset still exists
+    //shiftLeft(localEncodedStream, numberOfBytes*BitsInByte, RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp);
 
 
     //:TODO: Another possible source of device to host transfer problem
@@ -382,7 +420,7 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, unsigned int
 /**
  * CUDA kernel that identifies the winning encoding scheme for each block
  */
-__global__ void encodingKernel(ushort* inputSamples, unsigned char* gpuEncodedBlocks)
+__global__ void encodingKernel(ushort* inputSamples, unsigned char* d_EncodedBlocks, unsigned int* d_EncodedBlockSizes)
 {
 	// Operate on all samples for a given block together
 
@@ -393,7 +431,7 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* gpuEncodedBl
 	int threadId = blockId * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) + threadIdx.x;
 
 //***************************************
-//if(threadId > 4) return; // DEBUGGING
+if(threadId > 0) return; // DEBUGGING
 //***************************************
 
 	dataIndex = threadId;
@@ -416,7 +454,10 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* gpuEncodedBl
 	RiceAlgorithm::CodingSelection winningSelection;
 
 	// Apply SplitSequence encoding
-	encodedLength = splitSequenceEncoding(inputSamples, dataIndex*32, &selection, gpuEncodedBlocks);  // index by the block size or 32
+	encodedLength = splitSequenceEncoding(inputSamples, dataIndex*32, &selection, d_EncodedBlocks);  // index by the block size or 32
+
+	// Keep the encoded length for later
+	d_EncodedBlockSizes[dataIndex] = encodedLength;
 
 	// Find the winning encoding for all encoding types
     // This basically determines the winner
@@ -431,8 +472,8 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* gpuEncodedBl
 
 	if(dataIndex <= 7)
 	{
-	    printf("Line #430, (encodedLength=%d) dataIndex=%d gpuEncodedBlocks=%s\n",
-	    		encodedLength, dataIndex, byte_to_binary(&gpuEncodedBlocks[dataIndex*32], encodedLength));
+	    printf("Line #430, (encodedLength=%d) dataIndex=%d d_EncodedBlocks=%s\n",
+	    		encodedLength, dataIndex, byte_to_binary(&d_EncodedBlocks[dataIndex*32], encodedLength));
 	}
     //*************************************************************
     // Once here, synchronization among all threads should happen

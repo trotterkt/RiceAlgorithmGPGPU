@@ -119,6 +119,12 @@ void Sensor::process()
    	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_EncodedBlocks, sizeof(ushort)*(Rows*Columns*Bands)));
     //***************************************************************************
 
+   	// Allocate space for encoded block sizes -- the number of elements is the total samples
+   	// divided by the sample block size
+    unsigned int* d_EncodedBlockSizes(0);
+   	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_EncodedBlockSizes, sizeof(unsigned int)*((Rows*Columns*Bands)/32)));
+    //***************************************************************************
+
     //:TODO: This is one of the 1st places where we will start looking
     // at applying Amdahl's Law!!!
 //   	const int NumberThreadsPerBlock(32);
@@ -143,9 +149,9 @@ void Sensor::process()
    	                              // (i.e. lower CC only allow 256 threads per block)
    	dim3 gridBlocks(6, 32);
 
-   	encodingKernel<<<gridBlocks, threadsPerBlock>>> (d_PreProcessedImageData, d_EncodedBlocks);
+   	encodingKernel<<<gridBlocks, threadsPerBlock>>> (d_PreProcessedImageData, d_EncodedBlocks, d_EncodedBlockSizes);
 
-   	cudaDeviceSynchronize();
+   	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
 
     timestamp_t t3 = getTimestamp();
 
@@ -157,17 +163,25 @@ void Sensor::process()
 
     cout << "Encoding processing time ==> " << fixed << getSecondsDiff(t2, t3) << " seconds"<< endl;
 
-   	unsigned char h_EncodedBlock[Rows*Columns*Bands] = {0};
-   	//:TODO: should be sized as: sizeof(ushort) * (Rows*Columns*Bands)
-   	CUDA_CHECK_RETURN(cudaMemcpy(h_EncodedBlock, d_EncodedBlocks, (Rows*Columns*Bands), cudaMemcpyDeviceToHost));
 
-    for(int index=0; index<30; index+=3)
+	unsigned char* h_EncodedBlock = new unsigned char[sizeof(ushort) * Rows*Columns*Bands];
+   	CUDA_CHECK_RETURN(cudaMemcpy(h_EncodedBlock, d_EncodedBlocks, (sizeof(ushort) * (Rows*Columns*Bands)), cudaMemcpyDeviceToHost));
+
+
+   	unsigned int h_EncodedBlockSize[(Rows*Columns*Bands)/32] = {0};
+   	CUDA_CHECK_RETURN(cudaMemcpy(h_EncodedBlockSize, d_EncodedBlockSizes, sizeof(unsigned int) * (Rows*Columns*Bands)/32, cudaMemcpyDeviceToHost));
+
+
+    for(int index=0; index<30; index+=6)
     {
-    	cout << "h_EncodedBlock[" << dec << index << "]=0x" << hex << setw(2) << setfill('0') << int(h_EncodedBlock[index]) << " h_EncodedBlock["<< dec << index+1 << "]=0x" << dec << setw(2) << setfill('0') << int(h_EncodedBlock[index+1]) << endl;
-    	cout << "h_EncodedBlock[" << dec << index+2 << "]=0x" << hex << setw(2) << setfill('0') << int(h_EncodedBlock[index+2]) << " h_EncodedBlock[" << dec << index+3 << "]=0x" << dec << setw(2) << setfill('0') << int(h_EncodedBlock[index+3]) << endl;
-    	cout << "h_EncodedBlock[" << dec << index+4 << "]=0x" << hex << setw(2) << setfill('0') << int(h_EncodedBlock[index+4]) << " h_EncodedBlock[" << dec << index+5 << "]=0x" << dec << setw(2) << setfill('0') << int(h_EncodedBlock[index+5]) << endl;
+    	cout << "(size:" << dec << h_EncodedBlockSize[index] << ") h_EncodedBlock[" << dec << index << "]=0x" << hex << setfill('0') << int(h_EncodedBlock[index]) << " (size:" << dec << h_EncodedBlockSize[index+1] << ")  h_EncodedBlock["<< dec << index+1 << "]=0x" << hex <<  int(h_EncodedBlock[index+1]) << endl;
+    	cout << "(size:" << dec << h_EncodedBlockSize[index+2] << ") h_EncodedBlock[" << dec << index+2 << "]=0x" << hex << setfill('0') << int(h_EncodedBlock[index+2]) << " (size:" << dec << h_EncodedBlockSize[index+2] << ")  h_EncodedBlock[" << dec << index+3 << "]=0x" << hex << setfill('0') << int(h_EncodedBlock[index+3]) << endl;
+    	cout << "(size:" << dec << h_EncodedBlockSize[index+4] << ") h_EncodedBlock[" << dec << index+4 << "]=0x" << hex << setfill('0') << int(h_EncodedBlock[index+4]) << " (size:" << dec << h_EncodedBlockSize[index+4] << ")  h_EncodedBlock[" << dec << index+5 << "]=0x" << hex << setfill('0') << int(h_EncodedBlock[index+5]) << endl;
     }
+
     cudaFree(d_EncodedBlocks);
+    cudaFree(d_EncodedBlockSizes);
+
 
     //===========================================================
     cout << "Debug encoded stream on host - ";
@@ -188,20 +202,40 @@ void Sensor::process()
 
     boost::dynamic_bitset<unsigned char> encodedStream;
 
-    //for(int i=0; i<(encodedStream.size()/BitsPerByte); i++) // TODO: this is not accurate on the encoded size
-    for(int i=0; i<(sizeof(h_EncodedBlock)); i++)
-    {
-    	packCompressedData(h_EncodedBlock[i], encodedStream);
 
+    for(int i=0; i<((Rows*Columns*Bands)/32); i+=32)
+    {
+
+    	int numberOfBitsInBlock = h_EncodedBlockSize[i];
+
+
+        int blockEnd = i + (numberOfBitsInBlock/BitsInByte);
+
+        ulong writeBits = BitsInByte;
+
+    	for(int j=i; j <blockEnd; j++)
+    	{
+            if(!(numberOfBitsInBlock / BitsInByte))
+            {
+            	writeBits = numberOfBitsInBlock % BitsInByte;
+            }
+
+        	packCompressedData(h_EncodedBlock[j], encodedStream, writeBits);
+        	numberOfBitsInBlock -= writeBits;
+    	}
     }
 
+//===========================================================================================
+//    //for(int i=0; i<(encodedStream.size()/BitsPerByte); i++) // TODO: this is not accurate on the encoded size
+//    for(int i=0; i<((Rows*Columns*Bands)/32); i+=32)
+//    {
+//    	packCompressedData(h_EncodedBlock[i], encodedStream);
+//    }
 
     writeCompressedData(encodedStream);
 
 
-
-
-
+    delete [] h_EncodedBlock;
 
    	//boost::dynamic_bitset<unsigned char> encodedBits;
    	//encodedBits.resize(88);
