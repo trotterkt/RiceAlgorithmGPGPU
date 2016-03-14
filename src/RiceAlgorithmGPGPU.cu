@@ -58,6 +58,7 @@ void initialize(float *data, unsigned size)
 
 int main(void)
 {
+	cudaDeviceReset();
 
 	//=====================================================
     cout.precision(4);

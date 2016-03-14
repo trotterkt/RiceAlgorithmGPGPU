@@ -31,6 +31,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RiceAlgorithmGPGPU/src}&quot;"/>
 								</option>
 								<option id="nvcc.compiler.option.lineinfo.1262827499" name="Generate line-number information for device code (-lineinfo)" superClass="nvcc.compiler.option.lineinfo" value="true" valueType="boolean"/>
+								<option id="nvcc.compiler.option.gprof.1455245834" superClass="nvcc.compiler.option.gprof" value="true" valueType="boolean"/>
 								<inputType id="nvcc.compiler.input.cu.314179619" superClass="nvcc.compiler.input.cu"/>
 								<inputType id="nvcc.compiler.input.cpp.1361191875" superClass="nvcc.compiler.input.cpp"/>
 								<inputType id="nvcc.compiler.input.c.642522743" superClass="nvcc.compiler.input.c"/>

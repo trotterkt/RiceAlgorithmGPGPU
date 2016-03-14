@@ -34,6 +34,8 @@ const ushort MaximumEncodedBlockSize(RiceAlgorithm::BlockSize);
 const int Rows(1024);
 const int Columns(1024);
 const int Bands(6);
+const int BlockSize(32);
+
 
 
 
@@ -132,9 +134,7 @@ class Sensor
 		        packedData.append(ptrData[index]);
 		    }
 
-		    //packedData >>= bitSize;
 		    packedData.resize(currentSize+bitSize);
-
         }
 
         void writeCompressedData(boost::dynamic_bitset<unsigned char> &packedData, size_t bitSize=0, bool flag=false);

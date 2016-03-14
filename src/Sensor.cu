@@ -112,17 +112,16 @@ void Sensor::process()
 
 
 
-   	// total samples (1024*1024*6) / 32 sample blocks  = 196608
-    // Allocate space for the encoded blocks at one time. Include 1 byte at the start of
-   	// every 32 bytes for the encoded size
     unsigned char* d_EncodedBlocks(0);
-   	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_EncodedBlocks, sizeof(ushort)*(Rows*Columns*Bands)));
+   	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_EncodedBlocks, MaximumEncodedMemory));
+   	CUDA_CHECK_RETURN(cudaMemset(d_EncodedBlocks, 0, MaximumEncodedMemory));
     //***************************************************************************
 
    	// Allocate space for encoded block sizes -- the number of elements is the total samples
    	// divided by the sample block size
     unsigned int* d_EncodedBlockSizes(0);
    	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_EncodedBlockSizes, sizeof(unsigned int)*((Rows*Columns*Bands)/32)));
+   	CUDA_CHECK_RETURN(cudaMemset(d_EncodedBlockSizes, 0, sizeof(unsigned int)*((Rows*Columns*Bands)/32)));
     //***************************************************************************
 
     //:TODO: This is one of the 1st places where we will start looking
@@ -164,227 +163,132 @@ void Sensor::process()
     cout << "Encoding processing time ==> " << fixed << getSecondsDiff(t2, t3) << " seconds"<< endl;
 
 
-	unsigned char* h_EncodedBlock = new unsigned char[sizeof(ushort) * Rows*Columns*Bands];
-   	CUDA_CHECK_RETURN(cudaMemcpy(h_EncodedBlock, d_EncodedBlocks, (sizeof(ushort) * (Rows*Columns*Bands)), cudaMemcpyDeviceToHost));
+	unsigned char* h_EncodedBlock = new unsigned char[MaximumEncodedMemory];
+   	CUDA_CHECK_RETURN(cudaMemcpy(h_EncodedBlock, d_EncodedBlocks, MaximumEncodedMemory, cudaMemcpyDeviceToHost));
 
 
    	unsigned int h_EncodedBlockSize[(Rows*Columns*Bands)/32] = {0};
    	CUDA_CHECK_RETURN(cudaMemcpy(h_EncodedBlockSize, d_EncodedBlockSizes, sizeof(unsigned int) * (Rows*Columns*Bands)/32, cudaMemcpyDeviceToHost));
 
 
-    for(int index=0; index<30; index+=6)
+
+    for(ulong index=0; index<=2000; index+=2)
     {
-    	cout << "(size:" << dec << h_EncodedBlockSize[index] << ") h_EncodedBlock[" << dec << index << "]=0x" << hex << setfill('0') << int(h_EncodedBlock[index]) << " (size:" << dec << h_EncodedBlockSize[index+1] << ")  h_EncodedBlock["<< dec << index+1 << "]=0x" << hex <<  int(h_EncodedBlock[index+1]) << endl;
-    	cout << "(size:" << dec << h_EncodedBlockSize[index+2] << ") h_EncodedBlock[" << dec << index+2 << "]=0x" << hex << setfill('0') << int(h_EncodedBlock[index+2]) << " (size:" << dec << h_EncodedBlockSize[index+2] << ")  h_EncodedBlock[" << dec << index+3 << "]=0x" << hex << setfill('0') << int(h_EncodedBlock[index+3]) << endl;
-    	cout << "(size:" << dec << h_EncodedBlockSize[index+4] << ") h_EncodedBlock[" << dec << index+4 << "]=0x" << hex << setfill('0') << int(h_EncodedBlock[index+4]) << " (size:" << dec << h_EncodedBlockSize[index+4] << ")  h_EncodedBlock[" << dec << index+5 << "]=0x" << hex << setfill('0') << int(h_EncodedBlock[index+5]) << endl;
+    	cout << "h_EncodedBlock[" << dec << index << "]=0x" << hex << setfill('0') << int(h_EncodedBlock[index]) << " (size:" << " h_EncodedBlock["<< dec << index+1 << "]=0x" << hex <<  int(h_EncodedBlock[index+1]) << endl;
     }
+
+    cout << endl;
+
+    for(int index=0; index<=32; index++)
+     {
+     	cout << "Block:" << index << "(size:" << dec << h_EncodedBlockSize[index] << ")" << endl;
+     }
 
     cudaFree(d_EncodedBlocks);
     cudaFree(d_EncodedBlockSizes);
 
 
-    //===========================================================
-    cout << "Debug encoded stream on host - ";
-    for(int i=0; i<11; i++)
-    {
-    	boost::dynamic_bitset<unsigned char> debugEncodedStream(8, h_EncodedBlock[i]);
-    	cout << debugEncodedStream;
-    }
-	cout << endl;
-    cout << "Debug encoded stream on host - ";
-    for(int i=11; i<51; i++)
-    {
-    	boost::dynamic_bitset<unsigned char> debugEncodedStream(8, h_EncodedBlock[i]);
-    	cout << debugEncodedStream;
-    }
-	cout << endl;
-    //===========================================================
+//    //===========================================================
+//    int dataIndex(0);
+//    cout << "Debug encoded stream on host - dataIndex=" << dataIndex << "==>";
+//    for(int i=0; i<64; i++)
+//    {
+//    	boost::dynamic_bitset<unsigned char> debugEncodedStream(8, h_EncodedBlock[dataIndex*64 + i]);
+//    	cout << debugEncodedStream;
+//    }
+//	cout << endl;
+//	dataIndex = 1;
+//    cout << "Debug encoded stream on host - dataIndex=" << dataIndex << "==>";
+//    for(int i=0; i<64; i++)
+//    {
+//    	//boost::dynamic_bitset<unsigned char> debugEncodedStream(8, h_EncodedBlock[dataIndex*64 + i]);
+//    	boost::dynamic_bitset<unsigned char> debugEncodedStream(8, h_EncodedBlock[ i + 64]);
+//    	cout << debugEncodedStream;
+//    }
+//	cout << endl;
+//    //===========================================================
 
     boost::dynamic_bitset<unsigned char> encodedStream;
+    boost::dynamic_bitset<unsigned char> nextEncodedStream;
+    boost::dynamic_bitset<unsigned char> packedData;
+
+    size_t currentBitPosition(0);
+
+		unsigned char lastByte(0);
+		int differenceInBits(0);
+
+        size_t partialBits(0);
+
+	 //for(ulong dataIndex=0; dataIndex<20; dataIndex++) // (DEBUGGING - 196630 max)
+	 for(ulong dataIndex=0; dataIndex<MaximumThreads; dataIndex++)
+     {
+
+		 ulong partitianIndex = (dataIndex)*MaximumEncodedBytes;
+     	int numberOfBitsInBlock = h_EncodedBlockSize[dataIndex];
 
 
-    for(int i=0; i<((Rows*Columns*Bands)/32); i+=32)
-    {
+         int blockEnd = numberOfBitsInBlock/BitsInByte;
+         if(numberOfBitsInBlock % BitsInByte)
+         {
+        	 blockEnd++;
+         }
 
-    	int numberOfBitsInBlock = h_EncodedBlockSize[i];
+
+    	 // capture the first byte and combine with previous last if exist
+         unsigned char firstByte(h_EncodedBlock[partitianIndex]);
+         if(partialBits)
+         {
+        	 firstByte <<= partialBits;
+         }
 
 
-        int blockEnd = i + (numberOfBitsInBlock/BitsInByte);
+    	 nextEncodedStream.resize(0);
 
-        ulong writeBits = BitsInByte;
 
-    	for(int j=i; j <blockEnd; j++)
-    	{
-            if(!(numberOfBitsInBlock / BitsInByte))
-            {
-            	writeBits = numberOfBitsInBlock % BitsInByte;
-            }
+       	for(ulong j=partitianIndex; j <(partitianIndex+blockEnd); j++)
+       	{
+     		nextEncodedStream.append(h_EncodedBlock[j]);
+       	}
 
-        	packCompressedData(h_EncodedBlock[j], encodedStream, writeBits);
-        	numberOfBitsInBlock -= writeBits;
-    	}
-    }
+       	vector<unsigned char> packedDataBlocks(nextEncodedStream.num_blocks());
+       	vector<unsigned char>::iterator it;
 
-//===========================================================================================
-//    //for(int i=0; i<(encodedStream.size()/BitsPerByte); i++) // TODO: this is not accurate on the encoded size
-//    for(int i=0; i<((Rows*Columns*Bands)/32); i+=32)
-//    {
-//    	packCompressedData(h_EncodedBlock[i], encodedStream);
-//    }
+       	//populate vector blocks
+ 	    boost::to_block_range(nextEncodedStream, packedDataBlocks.begin());
 
-    writeCompressedData(encodedStream);
+       	if(partialBits)
+       	{
+       		unsigned char firstByte = packedDataBlocks.front();
+       		firstByte >>= partialBits;
 
+       		nextEncodedStream >>= partialBits;
+     	    boost::to_block_range(nextEncodedStream, packedDataBlocks.begin());
+
+
+     	   it = packedDataBlocks.begin();
+     	   *it = firstByte;
+
+     	   packedData.resize(packedData.size()-BitsInByte);
+       	}
+
+
+
+ 	    for (it = packedDataBlocks.begin(); it != packedDataBlocks.end(); ++it)
+ 	    {
+ 	    	packCompressedData(*it, packedData);
+   	    }
+
+
+        partialBits = (numberOfBitsInBlock % BitsInByte);
+
+
+        nextEncodedStream.resize(0);
+
+     }
+
+     writeCompressedData(packedData);
 
     delete [] h_EncodedBlock;
-
-   	//boost::dynamic_bitset<unsigned char> encodedBits;
-   	//encodedBits.resize(88);
-
-//   	cout << "cpuEncodedBlock=" << hex;
-//   	for(int index=0; index<12; index++)
-//   	{
-//   		cout << int(cpuEncodedBlock[index]);
-//   		//encodedBits[index] = cpuEncodedBlock[index];
-//   		encodedBits.append(cpuEncodedBlock[index]);
-//   	}
-//
-//   	cout << endl;
-//   	cout << "GPGPU:" << encodedBits << endl;
-//
-//
-//
-//
-//	//  reverses the bit order
-//   	//*************************************************************************
-//	// Note that this algorithm was largely arrived at empirically. Looking
-//	// at the data to see what is correct. Keep this in mind when defining
-//	// architectural decisions, and when there may exist reluctance
-//	// after prototyping activities.
-//	boost::dynamic_bitset<unsigned char> convertedStream;
-//    size_t numberOfBytes = encodedBits.size()/BitsPerByte;
-//    if(encodedBits.size() % BitsPerByte)
-//    {
-//    	numberOfBytes++;
-//    }
-//
-//
-//	convertedStream.resize(numberOfBytes*BitsPerByte);
-//	encodedBits.resize(numberOfBytes*BitsPerByte);
-//
-//	convertedStream[95] = encodedBits[0];
-//
-//	for (int bitIndex = 0; bitIndex < encodedBits.size(); bitIndex++)
-//	{
-//
-//		int targetBit = encodedBits.size()-bitIndex-1;
-//		int sourceBit = bitIndex;
-//
-//		convertedStream[targetBit] = encodedBits[sourceBit];
-//	}
-//
-//
-//   	cout << "convertedStream:" << convertedStream << endl;
-//   	//*************************************************************************
-
-
-//   	myEncodedBitCount += (myWinningEncodedLength + CodeOptionBitFieldFundamentalOrNoComp);
-//
-//	t2_intermediate = getTimestamp();
-//
-//	static unsigned int lastWinningEncodedLength(0);
-//
-//	sendEncodedSamples(encodedBits, 81);
-//
-//	getLastByte(lastByte);
-//
-//	t3_intermediate = getTimestamp();
-//
-//	lastWinningEncodedLength = encodedStream.size();
-
-
-
-//
-//   	//CUDA_CHECK_RETURN(cudaMemcpy(gpuPreProcessedImageData, residualsPtr, sizeof(ushort)*totalSamples, cudaMemcpyHostToDevice));
-//
-//
-////    for(blockIndex = 0; blockIndex<totalSamples; blockIndex+=32)
-////    {
-////
-////        size_t encodedSize(0);
-////
-////        // Reset for each capture of the winning length
-////        myWinningEncodedLength = (unsigned int) -1;
-////
-////        t0_intermediate = getTimestamp();
-////
-////        // Loop through each one of the possible encoders
-////        for (std::vector<AdaptiveEntropyEncoder*>::iterator iteration = myEncoderList.begin();
-////                iteration != myEncoderList.end(); ++iteration)
-////        {
-////
-////            encodedStream.clear();
-////
-////            // 1 block at a time
-////            (*iteration)->setSamples(&residualsPtr[blockIndex]);
-////
-////            CodingSelection selection; // This will be most applicable for distinguishing FS and K-split
-////
-////            encodedLength = (*iteration)->encode(encodedStream, selection);
-////
-////            // This basically determines the winner
-////            if (encodedLength < myWinningEncodedLength)
-////            {
-////                *this = *(*iteration);
-////                myWinningEncodedLength = encodedLength;
-////                winningSelection = selection;
-////
-////                encodedSize = (*iteration)->getEncodedBlockSize();
-////            }
-////
-////        }
-////
-////        t1_intermediate = getTimestamp();
-////
-////        //cout << "And the Winner is: " << int(winningSelection) << " of code length: " << myWinningEncodedLength << " on Block Sample [" << blockIndex << "]" << endl;
-////
-////
-////        ushort partialBits = myEncodedBitCount % BitsPerByte;
-////        unsigned char lastByte(0);
-////
-////        // When the last byte written is partial, as compared with the
-////        // total bits written, capture it so that it can be merged with
-////        // the next piece of encoded data
-////        if (getLastByte(lastByte))
-////		{
-////        	//cout << "Before partial appendage: " << encodedStream << endl;
-////        	unsigned int appendedSize = encodedStream.size()+partialBits;
-////			encodedStream.resize(appendedSize);
-////        	//cout << "Again  partial appendage: " << encodedStream << endl;
-////
-////			boost::dynamic_bitset<> lastByteStream(encodedStream.size(), lastByte);
-////			lastByteStream <<= (encodedStream.size() - partialBits);
-////			encodedStream |= lastByteStream;
-////        	//cout << "After partial appendage : " << encodedStream << endl;
-////		}
-////
-////        myEncodedBitCount += (myWinningEncodedLength + CodeOptionBitFieldFundamentalOrNoComp);
-////
-////        t2_intermediate = getTimestamp();
-////
-////        static unsigned int lastWinningEncodedLength(0);
-////
-////        sendEncodedSamples(encodedStream, encodedSize);
-////
-////        getLastByte(lastByte);
-////
-////        t3_intermediate = getTimestamp();
-////
-////        lastWinningEncodedLength = encodedStream.size();
-////
-////    }
-////
-//
-
 
 }
 
@@ -525,17 +429,6 @@ void Sensor::sendEncodedSamples(boost::dynamic_bitset<> &encodedStream, unsigned
 	}
 
 	writeCompressedData(convertedStream, encodedStream.size(), true);
-
-	//*****************************************************
-//	static int debugCount(0);
-//	if(debugCount >=3)
-//	{
-//	   myEncodedStream.close(); // :TODO: temporary test
-//	   exit(0);
-//	}
-//	debugCount++;
-    //*****************************************************
-
 
 }
 
