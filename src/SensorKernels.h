@@ -226,7 +226,7 @@ __device__ void bitwiseAnd(unsigned char* byteFirst, unsigned char* byteSecond, 
 }
 
 //NOTE: CUDA does not support passing reference to kernel argument
-__device__ unsigned int splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection, unsigned char* encodedStream)
+__device__ unsigned int splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection, unsigned char* d_EncodedBlocks)
 {
 
 	// Apply SplitSequence encoding
@@ -302,7 +302,7 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, ulong dataIn
 
 //    if(dataIndex <= 96)
 //    {
-//        printf("Line #306, BlockInx=%u encodedStream(size:%d)=%s\n", dataIndex, totalEncodedSize, byte_to_binary(localEncodedStream, totalEncodedSize));
+//        printf("Line #306, BlockInx=%u d_EncodedBlocks(size:%d)=%s\n", dataIndex, totalEncodedSize, byte_to_binary(localEncodedStream, totalEncodedSize));
 //    }
 
 
@@ -386,18 +386,18 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, ulong dataIn
 
     //printf("partitianIndex=%u dataIndex=%u localEncodedStream[0]=0x%4x numberOfBytes=%d\n", partitianIndex, dataIndex, localEncodedStream[0], numberOfBytes );
 
-    memcpy(&encodedStream[partitianIndex], localEncodedStream, numberOfBytes);
+    memcpy(&d_EncodedBlocks[partitianIndex], localEncodedStream, numberOfBytes);
 
 
-//    encodedStream[partitianIndex] = localEncodedStream[0];
-//    encodedStream[partitianIndex+1] =  localEncodedStream[1];
-//    encodedStream[partitianIndex+2] =  localEncodedStream[2];
+//    d_EncodedBlocks[partitianIndex] = localEncodedStream[0];
+//    d_EncodedBlocks[partitianIndex+1] =  localEncodedStream[1];
+//    d_EncodedBlocks[partitianIndex+2] =  localEncodedStream[2];
 
 
 //    for(int i=0; i<64; i++)
 //    {
 //    	//encodedDataPtr[partitianIndex+i] = localEncodedStream[i];
-//    	encodedStream[partitianIndex+i] = localEncodedStream[i];
+//    	d_EncodedBlocks[partitianIndex+i] = localEncodedStream[i];
 //    }
 
     code_len = totalEncodedSize;

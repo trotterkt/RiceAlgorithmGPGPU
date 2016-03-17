@@ -171,13 +171,22 @@ void Sensor::process()
    	CUDA_CHECK_RETURN(cudaMemcpy(h_EncodedBlockSize, d_EncodedBlockSizes, sizeof(unsigned int) * (Rows*Columns*Bands)/32, cudaMemcpyDeviceToHost));
 
 
-
+    // Print out the encodings. Note that every MaximumEncodedBytes byte
+   	// index is a Code ID
+   	//=========================================================================
     for(ulong index=0; index<=2000; index+=2)
     {
+    	if(!(index%MaximumEncodedBytes))
+    	{
+    		cout << "\nCodeID=" << dec << ((h_EncodedBlock[index] & 0xf0) >> 4) << endl;
+    		cout << "============================" << endl;
+    	}
+
     	cout << "h_EncodedBlock[" << dec << index << "]=0x" << hex << setfill('0') << int(h_EncodedBlock[index]) << " (size:" << " h_EncodedBlock["<< dec << index+1 << "]=0x" << hex <<  int(h_EncodedBlock[index+1]) << endl;
     }
 
     cout << endl;
+   	//=========================================================================
 
     for(int index=0; index<=32; index++)
      {

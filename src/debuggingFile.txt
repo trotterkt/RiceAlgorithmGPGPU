@@ -1,12 +1,15 @@
 Compressing Landsat_agriculture-u16be-6x1024x1024...
-Prediction processing time ==> 1.8954 seconds
+Prediction processing time ==> 2.0584 seconds
 
 Representative intermediate Encoding processing times ==> 
 (intermediate t0-t1): 0.0000 seconds
 (intermediate t1-t2): 0.0000 seconds
-(intermediate t2-t3): 18446744073701.6641 seconds
+(intermediate t2-t3): 18446744073677.7070 seconds
 
-Encoding processing time ==> 0.9858 seconds
+Encoding processing time ==> 0.9416 seconds
+
+CodeID=11
+============================
 h_EncodedBlock[0]=0xb0 (size: h_EncodedBlock[1]=0x0
 h_EncodedBlock[2]=0x0 (size: h_EncodedBlock[3]=0x42
 h_EncodedBlock[4]=0x49 (size: h_EncodedBlock[5]=0xfd
@@ -84,6 +87,9 @@ h_EncodedBlock[146]=0x0 (size: h_EncodedBlock[147]=0x0
 h_EncodedBlock[148]=0x0 (size: h_EncodedBlock[149]=0x0
 h_EncodedBlock[150]=0x0 (size: h_EncodedBlock[151]=0x0
 h_EncodedBlock[152]=0x0 (size: h_EncodedBlock[153]=0x0
+
+CodeID=11
+============================
 h_EncodedBlock[154]=0xbe (size: h_EncodedBlock[155]=0x8
 h_EncodedBlock[156]=0x64 (size: h_EncodedBlock[157]=0x77
 h_EncodedBlock[158]=0xc9 (size: h_EncodedBlock[159]=0x4c
@@ -161,6 +167,9 @@ h_EncodedBlock[300]=0x0 (size: h_EncodedBlock[301]=0x0
 h_EncodedBlock[302]=0x0 (size: h_EncodedBlock[303]=0x0
 h_EncodedBlock[304]=0x0 (size: h_EncodedBlock[305]=0x0
 h_EncodedBlock[306]=0x0 (size: h_EncodedBlock[307]=0x0
+
+CodeID=11
+============================
 h_EncodedBlock[308]=0xb4 (size: h_EncodedBlock[309]=0x8
 h_EncodedBlock[310]=0x5d (size: h_EncodedBlock[311]=0xe1
 h_EncodedBlock[312]=0x11 (size: h_EncodedBlock[313]=0xa3
@@ -238,6 +247,9 @@ h_EncodedBlock[454]=0x0 (size: h_EncodedBlock[455]=0x0
 h_EncodedBlock[456]=0x0 (size: h_EncodedBlock[457]=0x0
 h_EncodedBlock[458]=0x0 (size: h_EncodedBlock[459]=0x0
 h_EncodedBlock[460]=0x0 (size: h_EncodedBlock[461]=0x0
+
+CodeID=11
+============================
 h_EncodedBlock[462]=0xbb (size: h_EncodedBlock[463]=0xd9
 h_EncodedBlock[464]=0x76 (size: h_EncodedBlock[465]=0x2b
 h_EncodedBlock[466]=0x4e (size: h_EncodedBlock[467]=0x84
@@ -315,6 +327,9 @@ h_EncodedBlock[608]=0x0 (size: h_EncodedBlock[609]=0x0
 h_EncodedBlock[610]=0x0 (size: h_EncodedBlock[611]=0x0
 h_EncodedBlock[612]=0x0 (size: h_EncodedBlock[613]=0x0
 h_EncodedBlock[614]=0x0 (size: h_EncodedBlock[615]=0x0
+
+CodeID=11
+============================
 h_EncodedBlock[616]=0xb1 (size: h_EncodedBlock[617]=0x7
 h_EncodedBlock[618]=0xef (size: h_EncodedBlock[619]=0xde
 h_EncodedBlock[620]=0xaa (size: h_EncodedBlock[621]=0x52
@@ -392,6 +407,9 @@ h_EncodedBlock[762]=0x0 (size: h_EncodedBlock[763]=0x0
 h_EncodedBlock[764]=0x0 (size: h_EncodedBlock[765]=0x0
 h_EncodedBlock[766]=0x0 (size: h_EncodedBlock[767]=0x0
 h_EncodedBlock[768]=0x0 (size: h_EncodedBlock[769]=0x0
+
+CodeID=10
+============================
 h_EncodedBlock[770]=0xa6 (size: h_EncodedBlock[771]=0x14
 h_EncodedBlock[772]=0x96 (size: h_EncodedBlock[773]=0x10
 h_EncodedBlock[774]=0x0 (size: h_EncodedBlock[775]=0x41
@@ -469,6 +487,9 @@ h_EncodedBlock[916]=0x0 (size: h_EncodedBlock[917]=0x0
 h_EncodedBlock[918]=0x0 (size: h_EncodedBlock[919]=0x0
 h_EncodedBlock[920]=0x0 (size: h_EncodedBlock[921]=0x0
 h_EncodedBlock[922]=0x0 (size: h_EncodedBlock[923]=0x0
+
+CodeID=11
+============================
 h_EncodedBlock[924]=0xb5 (size: h_EncodedBlock[925]=0x95
 h_EncodedBlock[926]=0x20 (size: h_EncodedBlock[927]=0x1
 h_EncodedBlock[928]=0xc (size: h_EncodedBlock[929]=0x4a
@@ -546,6 +567,9 @@ h_EncodedBlock[1070]=0x0 (size: h_EncodedBlock[1071]=0x0
 h_EncodedBlock[1072]=0x0 (size: h_EncodedBlock[1073]=0x0
 h_EncodedBlock[1074]=0x0 (size: h_EncodedBlock[1075]=0x0
 h_EncodedBlock[1076]=0x0 (size: h_EncodedBlock[1077]=0x0
+
+CodeID=11
+============================
 h_EncodedBlock[1078]=0xbf (size: h_EncodedBlock[1079]=0xf6
 h_EncodedBlock[1080]=0x88 (size: h_EncodedBlock[1081]=0x70
 h_EncodedBlock[1082]=0x88 (size: h_EncodedBlock[1083]=0xa5
@@ -623,6 +647,9 @@ h_EncodedBlock[1224]=0x0 (size: h_EncodedBlock[1225]=0x0
 h_EncodedBlock[1226]=0x0 (size: h_EncodedBlock[1227]=0x0
 h_EncodedBlock[1228]=0x0 (size: h_EncodedBlock[1229]=0x0
 h_EncodedBlock[1230]=0x0 (size: h_EncodedBlock[1231]=0x0
+
+CodeID=11
+============================
 h_EncodedBlock[1232]=0xb0 (size: h_EncodedBlock[1233]=0xed
 h_EncodedBlock[1234]=0xf2 (size: h_EncodedBlock[1235]=0x19
 h_EncodedBlock[1236]=0xba (size: h_EncodedBlock[1237]=0xdf
@@ -700,6 +727,9 @@ h_EncodedBlock[1378]=0x0 (size: h_EncodedBlock[1379]=0x0
 h_EncodedBlock[1380]=0x0 (size: h_EncodedBlock[1381]=0x0
 h_EncodedBlock[1382]=0x0 (size: h_EncodedBlock[1383]=0x0
 h_EncodedBlock[1384]=0x0 (size: h_EncodedBlock[1385]=0x0
+
+CodeID=11
+============================
 h_EncodedBlock[1386]=0xb2 (size: h_EncodedBlock[1387]=0xbb
 h_EncodedBlock[1388]=0xd (size: h_EncodedBlock[1389]=0xc2
 h_EncodedBlock[1390]=0x35 (size: h_EncodedBlock[1391]=0xc2
@@ -777,6 +807,9 @@ h_EncodedBlock[1532]=0x0 (size: h_EncodedBlock[1533]=0x0
 h_EncodedBlock[1534]=0x0 (size: h_EncodedBlock[1535]=0x0
 h_EncodedBlock[1536]=0x0 (size: h_EncodedBlock[1537]=0x0
 h_EncodedBlock[1538]=0x0 (size: h_EncodedBlock[1539]=0x0
+
+CodeID=11
+============================
 h_EncodedBlock[1540]=0xb2 (size: h_EncodedBlock[1541]=0x12
 h_EncodedBlock[1542]=0x85 (size: h_EncodedBlock[1543]=0xc5
 h_EncodedBlock[1544]=0xfc (size: h_EncodedBlock[1545]=0x96
@@ -854,6 +887,9 @@ h_EncodedBlock[1686]=0x0 (size: h_EncodedBlock[1687]=0x0
 h_EncodedBlock[1688]=0x0 (size: h_EncodedBlock[1689]=0x0
 h_EncodedBlock[1690]=0x0 (size: h_EncodedBlock[1691]=0x0
 h_EncodedBlock[1692]=0x0 (size: h_EncodedBlock[1693]=0x0
+
+CodeID=11
+============================
 h_EncodedBlock[1694]=0xbc (size: h_EncodedBlock[1695]=0x3f
 h_EncodedBlock[1696]=0x24 (size: h_EncodedBlock[1697]=0x7
 h_EncodedBlock[1698]=0xef (size: h_EncodedBlock[1699]=0x36
@@ -931,6 +967,9 @@ h_EncodedBlock[1840]=0x0 (size: h_EncodedBlock[1841]=0x0
 h_EncodedBlock[1842]=0x0 (size: h_EncodedBlock[1843]=0x0
 h_EncodedBlock[1844]=0x0 (size: h_EncodedBlock[1845]=0x0
 h_EncodedBlock[1846]=0x0 (size: h_EncodedBlock[1847]=0x0
+
+CodeID=11
+============================
 h_EncodedBlock[1848]=0xb8 (size: h_EncodedBlock[1849]=0x41
 h_EncodedBlock[1850]=0xf2 (size: h_EncodedBlock[1851]=0xe
 h_EncodedBlock[1852]=0xeb (size: h_EncodedBlock[1853]=0x7c
