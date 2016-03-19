@@ -225,13 +225,8 @@ __device__ void bitwiseAnd(unsigned char* byteFirst, unsigned char* byteSecond, 
     }
 }
 
-//NOTE: CUDA does not support passing reference to kernel argument
-__device__ unsigned int splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection, unsigned char* d_EncodedBlocks)
+__device__ unsigned int getWinningEncodedLength(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection, size_t* encodedSizeList)
 {
-
-	// Apply SplitSequence encoding
-	//=========================================================================================================
-
     unsigned int code_len = (unsigned int)-1;
     int i = 0, k = 0;
     int k_limit = 14;
@@ -254,20 +249,81 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, ulong dataIn
         }
     }
 
-    size_t encodedSizeList[32];
+    //size_t encodedSizeList[32];
     unsigned int totalEncodedSize(0);
 
     // Get the total encoded size first
     for(int index = dataIndex*32; index < (dataIndex*32)+32; index++)
     {
         size_t encodedSize = (inputSamples[index] >> *selection) + 1;
-        encodedSizeList[index-(dataIndex*32)] = encodedSize;
+        encodedSizeList[index-(dataIndex*32)] = encodedSize; // Store Fundamental Sequence values
         totalEncodedSize += int(encodedSize);
 
     }
 
     // include space for the  code option
     totalEncodedSize += int(RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp);
+
+    code_len = totalEncodedSize;
+
+    return code_len;
+
+}
+
+//NOTE: CUDA does not support passing reference to kernel argument
+__device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection,
+		                              unsigned char* d_EncodedBlocks, unsigned int totalEncodedSize, size_t* encodedSizeList)
+{
+	// Returning immediately if selection not within range
+	// helps prevent thread divergence in warp
+	if(*selection > RiceAlgorithm::K14)
+	{
+		return;
+	}
+
+
+
+
+
+	// Apply SplitSequence encoding
+	//=========================================================================================================
+
+//    unsigned int code_len = (unsigned int)-1;
+//    int i = 0, k = 0;
+//    int k_limit = 14;
+
+
+//    for(k = 0; k < k_limit; k++)
+//    {
+//
+//        unsigned int code_len_temp = 0;
+//        for(i = dataIndex*32; i < (dataIndex*32)+32; i++)
+//        {
+//        	ushort encodedSample = inputSamples[i] >> k;
+//            code_len_temp += (encodedSample) + 1 + k;
+//        }
+//
+//        if(code_len_temp < code_len)
+//        {
+//            code_len = code_len_temp;
+//            *selection = RiceAlgorithm::CodingSelection(k);
+//        }
+//    }
+
+    //size_t encodedSizeList[32];
+    //unsigned int totalEncodedSize(0);
+
+    // Assemble number of zeros for encoding
+//    for(int index = dataIndex*32; index < (dataIndex*32)+32; index++)
+//    {
+//        size_t encodedSize = (inputSamples[index] >> *selection) + 1;
+//        encodedSizeList[index-(dataIndex*32)] = encodedSize;
+//        //totalEncodedSize += int(encodedSize);
+//
+//    }
+
+    // include space for the  code option
+    //totalEncodedSize += int(RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp);
 
 
 	// Not allocating from global memory is significantly faster
@@ -400,9 +456,9 @@ __device__ unsigned int splitSequenceEncoding(ushort* inputSamples, ulong dataIn
 //    	d_EncodedBlocks[partitianIndex+i] = localEncodedStream[i];
 //    }
 
-    code_len = totalEncodedSize;
+ //   code_len = totalEncodedSize;
 
-	return code_len;
+//	return code_len;
 }
 
 /**
@@ -432,23 +488,73 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* d_EncodedBlo
 	unsigned int winningEncodedLength = -1;
 	RiceAlgorithm::CodingSelection winningSelection;
 
+
+    unsigned int code_len = (unsigned int)-1;
+    size_t encodedSizeList[32];
+    unsigned int totalEncodedSize(0);
+
+    //===============================================================================================
+    totalEncodedSize = getWinningEncodedLength(inputSamples, dataIndex, &selection, encodedSizeList);
+
+//    switch (selection)
+//    {
+//		case RiceAlgorithm::K0:
+//		case RiceAlgorithm::K1:
+//		case RiceAlgorithm::K2:
+//		case RiceAlgorithm::K3:
+//		case RiceAlgorithm::K4:
+//		case RiceAlgorithm::K5:
+//		case RiceAlgorithm::K6:
+//		case RiceAlgorithm::K7:
+//		case RiceAlgorithm::K8:
+//		case RiceAlgorithm::K9:
+//		case RiceAlgorithm::K10:
+//		case RiceAlgorithm::K11:
+//		case RiceAlgorithm::K12:
+//		case RiceAlgorithm::K13:
+//		case RiceAlgorithm::K14:
+//			// Apply SplitSequence encoding  ===> Result is performance slow down (~0.5 sec).
+//            // Apparent that the switch statement is causing Thread Divergence
+//			splitSequenceEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, totalEncodedSize, encodedSizeList);
+//			break;
+//
+//		case RiceAlgorithm::ZeroBlockOpt:
+//
+//			break;
+//
+//		case RiceAlgorithm::SecondExtensionOpt:
+//
+//			break;
+//
+//		case RiceAlgorithm::NoCompressionOpt:
+//
+//			break;
+//
+//
+//    }
+
+    // Call will exit immediately return if Selection is out of range ==> prevents thread Divergence
+	splitSequenceEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, totalEncodedSize, encodedSizeList);  // index by the block size or 32
+
+    //===============================================================================================
+
 	// Apply SplitSequence encoding
-	//encodedLength = splitSequenceEncoding(inputSamples, dataIndex*32, &selection, d_EncodedBlocks);  // index by the block size or 32
-	encodedLength = splitSequenceEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks);  // index by the block size or 32
+	//encodedLength = splitSequenceEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks);  // index by the block size or 32
+
 
 	// Keep the encoded length for later
 	d_EncodedBlockSizes[dataIndex] = encodedLength;
 
 	// Find the winning encoding for all encoding types
     // This basically determines the winner
-    if (encodedLength < winningEncodedLength)
-    {
-        //*this = *(*iteration);
-        winningEncodedLength = encodedLength;
-        winningSelection = selection;
-
-        //encodedSize = (*iteration)->getEncodedBlockSize();
-    }
+//    if (encodedLength < winningEncodedLength)
+//    {
+//        //*this = *(*iteration);
+//        winningEncodedLength = encodedLength;
+//        winningSelection = selection;
+//
+//        //encodedSize = (*iteration)->getEncodedBlockSize();
+//    }
 
 //	if(dataIndex <= 2)
 //	{
