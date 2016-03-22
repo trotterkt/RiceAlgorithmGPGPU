@@ -461,6 +461,56 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
 //	return code_len;
 }
 
+
+__device__ void zeroBlockEncoding(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection,
+		                          unsigned char* d_EncodedBlocks, unsigned int totalEncodedSize, size_t* encodedSizeList)
+{
+	// Returning immediately if selection not within range
+	// helps prevent thread divergence in warp
+	if(*selection != RiceAlgorithm::ZeroBlockOpt)
+	{
+		return;
+	}
+
+
+    //*** TODO: Right now -- does not seem to be applicable to test image ***//
+
+
+}
+
+__device__ void secondExtensionEncoding(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection,
+		                                unsigned char* d_EncodedBlocks, unsigned int totalEncodedSize, size_t* encodedSizeList)
+{
+	// Returning immediately if selection not within range
+	// helps prevent thread divergence in warp
+	if(*selection != RiceAlgorithm::SecondExtensionOpt)
+	{
+		return;
+	}
+
+
+    //*** TODO: Right now -- does not seem to be applicable to test image ***//
+    // When it does may need to reassess how encoded samples are read back out before
+    // sending encodedStream
+    unsigned int secondExtentionOption;
+    size_t byteLocation(0);
+
+    // This will make the entire encoding 4 bits too long :TODO: Fix this
+    d_EncodedBlocks[byteLocation] = RiceAlgorithm::SecondExtensionOpt + 1;
+
+
+    int i = 0;
+    for(i = 0; i < 32; i+=2)
+    {
+        secondExtentionOption = (((unsigned int)inputSamples[i] + inputSamples[i + 1])*((unsigned int)inputSamples[i] + inputSamples[i + 1] + 1))/2 + inputSamples[i + 1];
+
+        memcpy(&d_EncodedBlocks[byteLocation], &secondExtentionOption, sizeof(secondExtentionOption));
+
+        byteLocation += sizeof(secondExtentionOption);
+    }
+
+}
+
 /**
  * CUDA kernel that identifies the winning encoding scheme for each block
  */
@@ -535,6 +585,12 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* d_EncodedBlo
 
     // Call will exit immediately return if Selection is out of range ==> prevents thread Divergence
 	splitSequenceEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, totalEncodedSize, encodedSizeList);  // index by the block size or 32
+
+	zeroBlockEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, totalEncodedSize, encodedSizeList);  // index by the block size or 32
+
+	secondExtensionEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, totalEncodedSize, encodedSizeList);  // index by the block size or 32
+
+	//:TODO: need No Comp Opt
 
     //===============================================================================================
 
