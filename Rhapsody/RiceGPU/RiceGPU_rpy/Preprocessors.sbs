@@ -1,0 +1,167 @@
+I-Logix-RPY-Archive version 8.5.2 Modeler C++ 1159120
+{ ISubsystem 
+	- _id = GUID c525d91b-9071-480e-8c97-c8912654a8d5;
+	- _myState = 8192;
+	- _name = "Preprocessors";
+	- _objectCreation = "111971222472016183168311";
+	- _umlDependencyID = "2987";
+	- _theMainDiagram = { IHandle 
+		- _m2Class = "IDiagram";
+		- _filename = "Default.sbs";
+		- _subsystem = "Default";
+		- _class = "";
+		- _name = "objectmodeldiagram_9";
+		- _id = GUID b84b164b-b147-4833-bffb-7e4ef4c3eb7a;
+	}
+	- _lastID = 3;
+	- weakCGTime = 3.23.2016::0:54:38;
+	- strongCGTime = 3.23.2016::0:45:37;
+	- _defaultComposite = GUID 317df171-0f56-4e76-9c19-30920730eaf0;
+	- _eventsBaseID = -1;
+	- Classes = { IRPYRawContainer 
+		- size = 4;
+		- value = 
+		{ IClass 
+			- _id = GUID 317df171-0f56-4e76-9c19-30920730eaf0;
+			- _myState = 40960;
+			- _name = "TopLevel";
+			- _objectCreation = "111971422472016183166311";
+			- _umlDependencyID = "2396";
+			- weakCGTime = 12.31.1969::16:0:0;
+			- strongCGTime = 12.31.1969::16:0:0;
+			- _multiplicity = "";
+			- _itsStateChart = { IHandle 
+				- _m2Class = "";
+			}
+			- _classModifier = Unspecified;
+		}
+		{ IClass 
+			- _id = GUID c3ecd9a2-9c87-4183-9a0d-5c1be47147d3;
+			- _myState = 8192;
+			- _name = "Predictor";
+			- _objectCreation = "111971622472016183164311";
+			- _umlDependencyID = "2525";
+			- _theMainDiagram = { IHandle 
+				- _m2Class = "IDiagram";
+				- _filename = "Default.sbs";
+				- _subsystem = "Default";
+				- _class = "";
+				- _name = "objectmodeldiagram_9";
+				- _id = GUID b84b164b-b147-4833-bffb-7e4ef4c3eb7a;
+			}
+			- _lastID = 1;
+			- weakCGTime = 3.23.2016::0:46:24;
+			- strongCGTime = 3.23.2016::0:46:24;
+			- Operations = { IRPYRawContainer 
+				- size = 1;
+				- value = 
+				{ IPrimitiveOperation 
+					- _id = GUID ee6abf91-dda5-413a-a616-1f4c2fcc81f5;
+					- _myState = 8192;
+					- _name = "getResiduals";
+					- _objectCreation = "111971822472016183162311";
+					- _umlDependencyID = "2845";
+					- _virtual = 0;
+					- Args = { IRPYRawContainer 
+						- size = 0;
+					}
+					- _returnType = { IHandle 
+						- _m2Class = "IType";
+						- _filename = "PredefinedTypesC++.sbs";
+						- _subsystem = "PredefinedTypesCpp";
+						- _class = "";
+						- _name = "void";
+						- _id = GUID c6b70728-b655-45a0-abb7-8ea5d3da94be;
+					}
+					- _abstract = 0;
+					- _final = 0;
+					- _concurrency = Sequential;
+					- _protection = iPublic;
+					- _static = 0;
+					- _constant = 0;
+				}
+			}
+			- _multiplicity = "";
+			- _itsStateChart = { IHandle 
+				- _m2Class = "";
+			}
+			- _classModifier = Unspecified;
+		}
+		{ IClass 
+			- _id = GUID 0e203eb3-e022-486a-93af-c673c6484100;
+			- _myState = 8192;
+			- _name = "UnitDelayPredictor";
+			- _objectCreation = "111972022472016183160311";
+			- _umlDependencyID = "3427";
+			- _theMainDiagram = { IHandle 
+				- _m2Class = "IDiagram";
+				- _filename = "Default.sbs";
+				- _subsystem = "Default";
+				- _class = "";
+				- _name = "objectmodeldiagram_9";
+				- _id = GUID b84b164b-b147-4833-bffb-7e4ef4c3eb7a;
+			}
+			- weakCGTime = 3.23.2016::0:55:5;
+			- strongCGTime = 3.23.2016::0:55:5;
+			- Inheritances = { IRPYRawContainer 
+				- size = 1;
+				- value = 
+				{ IGeneralization 
+					- _id = GUID 16431952-8514-4f3a-8966-4e7d6008be40;
+					- _objectCreation = "111972222472016183158311";
+					- _umlDependencyID = "1585";
+					- _dependsOn = { INObjectHandle 
+						- _m2Class = "IClass";
+						- _id = GUID c3ecd9a2-9c87-4183-9a0d-5c1be47147d3;
+					}
+					- _inheritanceType = iPublic;
+					- _isVirtual = 0;
+				}
+			}
+			- _multiplicity = "";
+			- _itsStateChart = { IHandle 
+				- _m2Class = "";
+			}
+			- _classModifier = Unspecified;
+		}
+		{ IClass 
+			- _id = GUID b91d88c5-d84b-4080-929d-c1f100fa54c0;
+			- _myState = 8192;
+			- _name = "MultiSpectralPredictor";
+			- _objectCreation = "111972422472016183156311";
+			- _umlDependencyID = "3878";
+			- _theMainDiagram = { IHandle 
+				- _m2Class = "IDiagram";
+				- _filename = "Default.sbs";
+				- _subsystem = "Default";
+				- _class = "";
+				- _name = "objectmodeldiagram_9";
+				- _id = GUID b84b164b-b147-4833-bffb-7e4ef4c3eb7a;
+			}
+			- weakCGTime = 3.23.2016::0:55:15;
+			- strongCGTime = 3.23.2016::0:54:55;
+			- Inheritances = { IRPYRawContainer 
+				- size = 1;
+				- value = 
+				{ IGeneralization 
+					- _id = GUID 62d8b365-76d9-45a1-a866-73e087bb8338;
+					- _objectCreation = "111972622472016183154311";
+					- _umlDependencyID = "1585";
+					- _dependsOn = { INObjectHandle 
+						- _m2Class = "IClass";
+						- _id = GUID c3ecd9a2-9c87-4183-9a0d-5c1be47147d3;
+					}
+					- _inheritanceType = iPublic;
+					- _isVirtual = 0;
+				}
+			}
+			- _multiplicity = "";
+			- _itsStateChart = { IHandle 
+				- _m2Class = "";
+			}
+			- _classModifier = Unspecified;
+		}
+	}
+	- _configurationRelatedTime = 3.23.2016::0:46:17;
+}
+

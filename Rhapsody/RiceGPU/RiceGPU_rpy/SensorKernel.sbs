@@ -1,0 +1,40 @@
+I-Logix-RPY-Archive version 8.5.2 Modeler C++ 1159120
+{ ISubsystem 
+	- _id = GUID bb143363-6873-4c3c-940b-ba71b85a9754;
+	- _myState = 8192;
+	- _name = "SensorKernel";
+	- _objectCreation = "111972822472016183152311";
+	- _umlDependencyID = "2828";
+	- _theMainDiagram = { IHandle 
+		- _m2Class = "IDiagram";
+		- _filename = "Default.sbs";
+		- _subsystem = "Default";
+		- _class = "";
+		- _name = "objectmodeldiagram_9";
+		- _id = GUID b84b164b-b147-4833-bffb-7e4ef4c3eb7a;
+	}
+	- weakCGTime = 3.23.2016::1:40:21;
+	- strongCGTime = 3.23.2016::1:40:21;
+	- _defaultComposite = GUID 43d636e2-5d35-42f5-a5a2-f121596ba955;
+	- _eventsBaseID = -1;
+	- Classes = { IRPYRawContainer 
+		- size = 1;
+		- value = 
+		{ IClass 
+			- _id = GUID 43d636e2-5d35-42f5-a5a2-f121596ba955;
+			- _myState = 40960;
+			- _name = "TopLevel";
+			- _objectCreation = "111973022472016183150311";
+			- _umlDependencyID = "2387";
+			- weakCGTime = 12.31.1969::16:0:0;
+			- strongCGTime = 12.31.1969::16:0:0;
+			- _multiplicity = "";
+			- _itsStateChart = { IHandle 
+				- _m2Class = "";
+			}
+			- _classModifier = Unspecified;
+		}
+	}
+	- _configurationRelatedTime = 12.31.1969::16:0:0;
+}
+

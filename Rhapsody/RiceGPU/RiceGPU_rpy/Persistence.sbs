@@ -1,0 +1,100 @@
+I-Logix-RPY-Archive version 8.5.2 Modeler C++ 1159120
+{ ISubsystem 
+	- _id = GUID 4e151961-7b5d-408d-ba5b-c440e3715cfa;
+	- _myState = 8192;
+	- _name = "Persistence";
+	- _objectCreation = "123048122472016183152312";
+	- _umlDependencyID = "2733";
+	- _theMainDiagram = { IHandle 
+		- _m2Class = "IDiagram";
+		- _filename = "Default.sbs";
+		- _subsystem = "Default";
+		- _class = "";
+		- _name = "objectmodeldiagram_9";
+		- _id = GUID b84b164b-b147-4833-bffb-7e4ef4c3eb7a;
+	}
+	- _lastID = 2;
+	- weakCGTime = 3.23.2016::1:46:1;
+	- strongCGTime = 3.23.2016::1:42:14;
+	- _defaultComposite = GUID 94e0a9b2-5a78-4297-923a-ddf41c1df9b5;
+	- _eventsBaseID = -1;
+	- Classes = { IRPYRawContainer 
+		- size = 3;
+		- value = 
+		{ IClass 
+			- _id = GUID 94e0a9b2-5a78-4297-923a-ddf41c1df9b5;
+			- _myState = 40960;
+			- _name = "TopLevel";
+			- _objectCreation = "123048322472016183150312";
+			- _umlDependencyID = "2387";
+			- weakCGTime = 12.31.1969::16:0:0;
+			- strongCGTime = 12.31.1969::16:0:0;
+			- _multiplicity = "";
+			- _itsStateChart = { IHandle 
+				- _m2Class = "";
+			}
+			- _classModifier = Unspecified;
+		}
+		{ IClass 
+			- _id = GUID dba8541f-8713-4f61-9843-9354d9e9d84d;
+			- _myState = 8192;
+			- _name = "ImagePersistenct";
+			- _objectCreation = "123048522472016183148312";
+			- _umlDependencyID = "3240";
+			- _theMainDiagram = { IHandle 
+				- _m2Class = "IDiagram";
+				- _filename = "Default.sbs";
+				- _subsystem = "Default";
+				- _class = "";
+				- _name = "objectmodeldiagram_9";
+				- _id = GUID b84b164b-b147-4833-bffb-7e4ef4c3eb7a;
+			}
+			- weakCGTime = 3.23.2016::1:43:18;
+			- strongCGTime = 3.23.2016::1:43:18;
+			- _multiplicity = "";
+			- _itsStateChart = { IHandle 
+				- _m2Class = "";
+			}
+			- _classModifier = Unspecified;
+		}
+		{ IClass 
+			- _id = GUID 3cfcc84d-6bcf-4103-86d8-fb782d992d3f;
+			- _myState = 8192;
+			- _name = "FileBasedImagePersistence";
+			- _objectCreation = "123048722472016183146312";
+			- _umlDependencyID = "4088";
+			- _theMainDiagram = { IHandle 
+				- _m2Class = "IDiagram";
+				- _filename = "Default.sbs";
+				- _subsystem = "Default";
+				- _class = "";
+				- _name = "objectmodeldiagram_9";
+				- _id = GUID b84b164b-b147-4833-bffb-7e4ef4c3eb7a;
+			}
+			- weakCGTime = 3.23.2016::1:46:41;
+			- strongCGTime = 3.23.2016::1:46:29;
+			- Inheritances = { IRPYRawContainer 
+				- size = 1;
+				- value = 
+				{ IGeneralization 
+					- _id = GUID ffe2850a-97e6-4536-9bfa-d86d48045a33;
+					- _objectCreation = "123048922472016183144312";
+					- _umlDependencyID = "1585";
+					- _dependsOn = { INObjectHandle 
+						- _m2Class = "IClass";
+						- _id = GUID dba8541f-8713-4f61-9843-9354d9e9d84d;
+					}
+					- _inheritanceType = iPublic;
+					- _isVirtual = 0;
+				}
+			}
+			- _multiplicity = "";
+			- _itsStateChart = { IHandle 
+				- _m2Class = "";
+			}
+			- _classModifier = Unspecified;
+		}
+	}
+	- _configurationRelatedTime = 12.31.1969::16:0:0;
+}
+
