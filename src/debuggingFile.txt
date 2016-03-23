@@ -1,12 +1,12 @@
 Compressing Landsat_agriculture-u16be-6x1024x1024...
-Prediction processing time ==> 1.9563 seconds
+Prediction processing time ==> 2.1254 seconds
 
 Representative intermediate Encoding processing times ==> 
 (intermediate t0-t1): 0.0000 seconds
 (intermediate t1-t2): 0.0000 seconds
-(intermediate t2-t3): 18446744073699.6055 seconds
+(intermediate t2-t3): 18446744073707.5547 seconds
 
-Encoding processing time ==> 0.9536 seconds
+Encoding processing time ==> 1.0501 seconds
 
 CodeID=11
 ============================
@@ -1048,36 +1048,36 @@ h_EncodedBlock[1996]=0x0 (size: h_EncodedBlock[1997]=0x0
 h_EncodedBlock[1998]=0x0 (size: h_EncodedBlock[1999]=0x0
 h_EncodedBlock[2000]=0x0 (size: h_EncodedBlock[2001]=0x0
 
-Block:0(size:0)
-Block:1(size:0)
-Block:2(size:0)
-Block:3(size:0)
-Block:4(size:0)
-Block:5(size:0)
-Block:6(size:0)
-Block:7(size:0)
-Block:8(size:0)
-Block:9(size:0)
-Block:10(size:0)
-Block:11(size:0)
-Block:12(size:0)
-Block:13(size:0)
-Block:14(size:0)
-Block:15(size:0)
-Block:16(size:0)
-Block:17(size:0)
-Block:18(size:0)
-Block:19(size:0)
-Block:20(size:0)
-Block:21(size:0)
-Block:22(size:0)
-Block:23(size:0)
-Block:24(size:0)
-Block:25(size:0)
-Block:26(size:0)
-Block:27(size:0)
-Block:28(size:0)
-Block:29(size:0)
-Block:30(size:0)
-Block:31(size:0)
-Block:32(size:0)
+Block:0(size:401)
+Block:1(size:395)
+Block:2(size:412)
+Block:3(size:393)
+Block:4(size:400)
+Block:5(size:383)
+Block:6(size:380)
+Block:7(size:402)
+Block:8(size:395)
+Block:9(size:371)
+Block:10(size:375)
+Block:11(size:388)
+Block:12(size:393)
+Block:13(size:379)
+Block:14(size:390)
+Block:15(size:388)
+Block:16(size:376)
+Block:17(size:377)
+Block:18(size:403)
+Block:19(size:367)
+Block:20(size:393)
+Block:21(size:376)
+Block:22(size:381)
+Block:23(size:389)
+Block:24(size:390)
+Block:25(size:378)
+Block:26(size:377)
+Block:27(size:388)
+Block:28(size:367)
+Block:29(size:380)
+Block:30(size:385)
+Block:31(size:377)
+Block:32(size:431)

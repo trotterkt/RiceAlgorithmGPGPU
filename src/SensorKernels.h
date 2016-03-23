@@ -272,7 +272,7 @@ __device__ unsigned int getWinningEncodedLength(ushort* inputSamples, ulong data
 
 //NOTE: CUDA does not support passing reference to kernel argument
 __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection,
-		                              unsigned char* d_EncodedBlocks, unsigned int totalEncodedSize, size_t* encodedSizeList)
+		                              unsigned char* d_EncodedBlocks, unsigned int* totalEncodedSize, size_t* encodedSizeList)
 {
 	// Returning immediately if selection not within range
 	// helps prevent thread divergence in warp
@@ -343,7 +343,7 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
 
     	int shift = encodedSizeList[index];
 
-        shiftRight(localEncodedStream, totalEncodedSize, shift);
+        shiftRight(localEncodedStream, *totalEncodedSize, shift);
     }
 
 
@@ -379,7 +379,7 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
     unsigned char encodedSample[MaximumByteArray] = {0};
     unsigned char individualEncodedSample[MaximumByteArray];
 
-    totalEncodedSize += (32 * *selection);
+    *totalEncodedSize += (32 * *selection);
 
 
     for(int index = 0; index < 32; index++)
@@ -394,8 +394,8 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
         // This shift aligns the encoding at the proper relative position in the array
         memcpy(individualEncodedSample, byteConvert, sizeof(byteConvert));
 
-        shiftRight(individualEncodedSample, totalEncodedSize, ((*selection * index)));
-        shiftLeft(individualEncodedSample, totalEncodedSize,  (BitsInByte*sizeof(byteConvert)) - *selection);
+        shiftRight(individualEncodedSample, *totalEncodedSize, ((*selection * index)));
+        shiftLeft(individualEncodedSample, *totalEncodedSize,  (BitsInByte*sizeof(byteConvert)) - *selection);
 
 
 //        if(dataIndex <= 1)
@@ -417,8 +417,8 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
     //=========================================================================================================
 
     // determine number of bytes
-    unsigned int numberOfBytes(totalEncodedSize/RiceAlgorithm::BitsPerByte);
-    if(totalEncodedSize%RiceAlgorithm::BitsPerByte)
+    unsigned int numberOfBytes(*totalEncodedSize/RiceAlgorithm::BitsPerByte);
+    if(*totalEncodedSize%RiceAlgorithm::BitsPerByte)
     {
     	numberOfBytes++;
     }
@@ -426,7 +426,7 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
     // :TODO: Unclear why offset still exists
     shiftLeft(localEncodedStream, numberOfBytes*BitsInByte, RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp);
 
-    shiftRight(encodedSample, totalEncodedSize, (totalEncodedSize - (32 * *selection)));
+    shiftRight(encodedSample, *totalEncodedSize, (*totalEncodedSize - (32 * *selection)));
 
     //if(dataIndex <= 1)
     // {
@@ -463,7 +463,7 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
 
 
 __device__ void zeroBlockEncoding(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection,
-		                          unsigned char* d_EncodedBlocks, unsigned int totalEncodedSize, size_t* encodedSizeList)
+		                          unsigned char* d_EncodedBlocks, unsigned int* totalEncodedSize, size_t* encodedSizeList)
 {
 	// Returning immediately if selection not within range
 	// helps prevent thread divergence in warp
@@ -479,7 +479,7 @@ __device__ void zeroBlockEncoding(ushort* inputSamples, ulong dataIndex, RiceAlg
 }
 
 __device__ void secondExtensionEncoding(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection,
-		                                unsigned char* d_EncodedBlocks, unsigned int totalEncodedSize, size_t* encodedSizeList)
+		                                unsigned char* d_EncodedBlocks, unsigned int* totalEncodedSize, size_t* encodedSizeList)
 {
 	// Returning immediately if selection not within range
 	// helps prevent thread divergence in warp
@@ -584,11 +584,11 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* d_EncodedBlo
 //    }
 
     // Call will exit immediately return if Selection is out of range ==> prevents thread Divergence
-	splitSequenceEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, totalEncodedSize, encodedSizeList);  // index by the block size or 32
+	splitSequenceEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, &totalEncodedSize, encodedSizeList);  // index by the block size or 32
 
-	zeroBlockEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, totalEncodedSize, encodedSizeList);  // index by the block size or 32
+	zeroBlockEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, &totalEncodedSize, encodedSizeList);  // index by the block size or 32
 
-	secondExtensionEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, totalEncodedSize, encodedSizeList);  // index by the block size or 32
+	secondExtensionEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, &totalEncodedSize, encodedSizeList);  // index by the block size or 32
 
 	//:TODO: need No Comp Opt
 
@@ -599,7 +599,7 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* d_EncodedBlo
 
 
 	// Keep the encoded length for later
-	d_EncodedBlockSizes[dataIndex] = encodedLength;
+	d_EncodedBlockSizes[dataIndex] = totalEncodedSize;
 
 	// Find the winning encoding for all encoding types
     // This basically determines the winner

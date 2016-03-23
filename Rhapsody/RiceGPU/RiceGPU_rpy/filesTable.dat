@@ -1,11 +1,14 @@
 I-Logix-RPY-Archive version 8.5.2 Modeler * 1159120
 
 - filesTable = { IRPYRawContainer 
-	- size = 4;
+	- size = 7;
 	- value = "Projects.rpl" ""
 	"RiceGPU.rpy" ""
 	"RiceGPU_rpy\\Default.sbs" "Default"
 	"RiceGPU_rpy\\DefaultComponent.cmp" "DefaultComponent"
+	"RiceGPU_rpy\\Persistence.sbs" "Persistence"
+	"RiceGPU_rpy\\Preprocessors.sbs" "Preprocessors"
+	"RiceGPU_rpy\\SensorKernel.sbs" "SensorKernel"
 	
 }
 
