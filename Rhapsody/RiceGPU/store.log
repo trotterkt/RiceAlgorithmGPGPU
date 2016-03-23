@@ -1,28 +1,49 @@
-03, 17, 2016 (13:58:01): Starting Pre-Save actions
+03, 22, 2016 (18:47:08): Starting Pre-Save actions
 
-03, 17, 2016 (13:58:01): Starting Dialogs Check/Save
-03, 17, 2016 (13:58:01): Finished Dialogs Check/Save
-03, 17, 2016 (13:58:01): Starting Controlled Files Resolution
-03, 17, 2016 (13:58:01): Finished Controlled Files Resolution
-03, 17, 2016 (13:58:01): Finished Pre-Save actions
+03, 22, 2016 (18:47:08): Starting Dialogs Check/Save
+03, 22, 2016 (18:47:08): Finished Dialogs Check/Save
+03, 22, 2016 (18:47:08): Starting Controlled Files Resolution
+03, 22, 2016 (18:47:08): Finished Controlled Files Resolution
+03, 22, 2016 (18:47:08): Finished Pre-Save actions
 
-03, 17, 2016 (13:58:01): Creating H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU.rpy
-03, 17, 2016 (13:58:01): 
-Started writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU.rpy on Thursday, March 17, 2016 (13:58:01)
+03, 22, 2016 (18:47:08): Creating H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU.rpy
+03, 22, 2016 (18:47:09): 
+Started writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU.rpy on Tuesday, March 22, 2016 (18:47:09)
 
-03, 17, 2016 (13:58:01): version 8.5.2
-03, 17, 2016 (13:58:01): 
-Started writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\filesTable.dat on Thursday, March 17, 2016 (13:58:01)
+03, 22, 2016 (18:47:09): version 8.5.2
+03, 22, 2016 (18:47:09): 
+Started writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\filesTable.dat on Tuesday, March 22, 2016 (18:47:09)
 
-03, 17, 2016 (13:58:01): Finished writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\filesTable.dat on Thursday, March 17, 2016 (13:58:01)
+03, 22, 2016 (18:47:09): Finished writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\filesTable.dat on Tuesday, March 22, 2016 (18:47:09)
 
-03, 17, 2016 (13:58:01): Creating H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\Default.sbs
-03, 17, 2016 (13:58:01): 
-Started writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\Default.sbs on Thursday, March 17, 2016 (13:58:01)
+03, 22, 2016 (18:47:09): Creating H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\Default.sbs
+03, 22, 2016 (18:47:09): 
+Started writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\Default.sbs on Tuesday, March 22, 2016 (18:47:09)
 
-03, 17, 2016 (13:58:01): version 8.5.2
-03, 17, 2016 (13:58:03): Finished writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\Default.sbs on Thursday, March 17, 2016 (13:58:03)
+03, 22, 2016 (18:47:09): version 8.5.2
+03, 22, 2016 (18:47:11): Finished writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\Default.sbs on Tuesday, March 22, 2016 (18:47:11)
 
-03, 17, 2016 (13:58:03): Finished writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU.rpy on Thursday, March 17, 2016 (13:58:03)
+03, 22, 2016 (18:47:11): Creating H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\Preprocessors.sbs
+03, 22, 2016 (18:47:11): 
+Started writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\Preprocessors.sbs on Tuesday, March 22, 2016 (18:47:11)
 
-03, 17, 2016 (13:58:03): End Log
+03, 22, 2016 (18:47:11): version 8.5.2
+03, 22, 2016 (18:47:11): Finished writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\Preprocessors.sbs on Tuesday, March 22, 2016 (18:47:11)
+
+03, 22, 2016 (18:47:11): Creating H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\SensorKernel.sbs
+03, 22, 2016 (18:47:11): 
+Started writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\SensorKernel.sbs on Tuesday, March 22, 2016 (18:47:11)
+
+03, 22, 2016 (18:47:11): version 8.5.2
+03, 22, 2016 (18:47:11): Finished writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\SensorKernel.sbs on Tuesday, March 22, 2016 (18:47:11)
+
+03, 22, 2016 (18:47:11): Creating H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\Persistence.sbs
+03, 22, 2016 (18:47:12): 
+Started writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\Persistence.sbs on Tuesday, March 22, 2016 (18:47:12)
+
+03, 22, 2016 (18:47:12): version 8.5.2
+03, 22, 2016 (18:47:12): Finished writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU_rpy\Persistence.sbs on Tuesday, March 22, 2016 (18:47:12)
+
+03, 22, 2016 (18:47:12): Finished writing H:\git\RiceAlgorithmGPGPU\Rhapsody\RiceGPU\RiceGPU.rpy on Tuesday, March 22, 2016 (18:47:12)
+
+03, 22, 2016 (18:47:12): End Log

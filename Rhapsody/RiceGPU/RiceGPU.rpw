@@ -4,13 +4,41 @@ I-Logix-RPY-Archive version 8.5.2 Modeler * 1159120
 		- size = 0;
 	}
 	- myViewsWithID = { IRPYRawContainer 
-		- size = 2;
+		- size = 6;
 		- value = 
 		{ CGEMdiDiagramParams 
 			- _placement = { CCommon_WINDOWPLACEMENT 
 				- m_nLength = 44;
-				- m_nFlags = 2;
-				- m_showCmd = 3;
+				- m_nFlags = 0;
+				- m_showCmd = 1;
+				- m_ptMinPositionX = -1;
+				- m_ptMinPositionY = -1;
+				- m_ptMaxPositionX = -9;
+				- m_ptMaxPositionY = -36;
+				- m_nLeft = 90;
+				- m_nTop = 90;
+				- m_nRight = 984;
+				- m_nBottom = 607;
+			}
+			- _wasOpenedOnCloseProject = 1;
+			- _theDiagram = { IHandle 
+				- _m2Class = "IMSC";
+				- _filename = "Default.sbs";
+				- _subsystem = "Default";
+				- _class = "";
+				- _name = "RiceEncodingSequence";
+				- _id = GUID 6b3e3488-f222-45df-b0a5-bf6b77b63a31;
+			}
+			- _UpLeft = 0 10 ;
+			- _DownRight = 851 437 ;
+			- _instanceName = "";
+			- m_nDiagramIndex = 3;
+		}
+		{ CGEMdiDiagramParams 
+			- _placement = { CCommon_WINDOWPLACEMENT 
+				- m_nLength = 44;
+				- m_nFlags = 0;
+				- m_showCmd = 1;
 				- m_ptMinPositionX = -1;
 				- m_ptMinPositionY = -1;
 				- m_ptMaxPositionX = -9;
@@ -29,10 +57,94 @@ I-Logix-RPY-Archive version 8.5.2 Modeler * 1159120
 				- _name = "ActivityDiagram";
 				- _id = GUID a18dd107-d729-45c2-93d9-2497deb76ab2;
 			}
-			- _UpLeft = 314 0 ;
-			- _DownRight = 1772 936 ;
+			- _UpLeft = 597 0 ;
+			- _DownRight = 1716 602 ;
+			- _instanceName = "";
+			- m_nDiagramIndex = 4;
+		}
+		{ CGEMdiDiagramParams 
+			- _placement = { CCommon_WINDOWPLACEMENT 
+				- m_nLength = 44;
+				- m_nFlags = 0;
+				- m_showCmd = 1;
+				- m_ptMinPositionX = -1;
+				- m_ptMinPositionY = -1;
+				- m_ptMaxPositionX = -9;
+				- m_ptMaxPositionY = -36;
+				- m_nLeft = 120;
+				- m_nTop = 120;
+				- m_nRight = 1014;
+				- m_nBottom = 637;
+			}
+			- _wasOpenedOnCloseProject = 1;
+			- _theDiagram = { IHandle 
+				- _m2Class = "IComponentDiagram";
+				- _filename = "Default.sbs";
+				- _subsystem = "Default";
+				- _class = "";
+				- _name = "componentdiagram_8";
+				- _id = GUID bfa00d26-3737-4dad-8918-08548051399e;
+			}
+			- _UpLeft = 0 0 ;
+			- _DownRight = 851 447 ;
+			- _instanceName = "";
+			- m_nDiagramIndex = 2;
+		}
+		{ CGEMdiDiagramParams 
+			- _placement = { CCommon_WINDOWPLACEMENT 
+				- m_nLength = 44;
+				- m_nFlags = 0;
+				- m_showCmd = 1;
+				- m_ptMinPositionX = -1;
+				- m_ptMinPositionY = -1;
+				- m_ptMaxPositionX = -9;
+				- m_ptMaxPositionY = -36;
+				- m_nLeft = 180;
+				- m_nTop = 180;
+				- m_nRight = 1074;
+				- m_nBottom = 697;
+			}
+			- _wasOpenedOnCloseProject = 1;
+			- _theDiagram = { IHandle 
+				- _m2Class = "IDeploymentDiagram";
+				- _filename = "Default.sbs";
+				- _subsystem = "Default";
+				- _class = "";
+				- _name = "deploymentdiagram_10";
+				- _id = GUID 22a168b8-b98d-4d6c-bce1-2e4efa520c3e;
+			}
+			- _UpLeft = 0 0 ;
+			- _DownRight = 851 447 ;
 			- _instanceName = "";
 			- m_nDiagramIndex = 0;
+		}
+		{ CGEMdiDiagramParams 
+			- _placement = { CCommon_WINDOWPLACEMENT 
+				- m_nLength = 44;
+				- m_nFlags = 2;
+				- m_showCmd = 3;
+				- m_ptMinPositionX = -1;
+				- m_ptMinPositionY = -1;
+				- m_ptMaxPositionX = -9;
+				- m_ptMaxPositionY = -36;
+				- m_nLeft = 150;
+				- m_nTop = 150;
+				- m_nRight = 1044;
+				- m_nBottom = 667;
+			}
+			- _wasOpenedOnCloseProject = 1;
+			- _theDiagram = { IHandle 
+				- _m2Class = "IDiagram";
+				- _filename = "Default.sbs";
+				- _subsystem = "Default";
+				- _class = "";
+				- _name = "objectmodeldiagram_9";
+				- _id = GUID b84b164b-b147-4833-bffb-7e4ef4c3eb7a;
+			}
+			- _UpLeft = 190 0 ;
+			- _DownRight = 1299 732 ;
+			- _instanceName = "";
+			- m_nDiagramIndex = 1;
 		}
 		{ CGEMdiDiagramParams 
 			- _placement = { CCommon_WINDOWPLACEMENT 
@@ -60,7 +172,7 @@ I-Logix-RPY-Archive version 8.5.2 Modeler * 1159120
 			- _UpLeft = 0 0 ;
 			- _DownRight = 851 478 ;
 			- _instanceName = "";
-			- m_nDiagramIndex = 1;
+			- m_nDiagramIndex = 5;
 		}
 	}
 	- _fullName = "H:\\git\\RiceAlgorithmGPGPU\\Rhapsody\\RiceGPU\\RiceGPU";
