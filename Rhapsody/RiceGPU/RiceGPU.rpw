@@ -4,7 +4,7 @@ I-Logix-RPY-Archive version 8.5.2 Modeler * 1159120
 		- size = 0;
 	}
 	- myViewsWithID = { IRPYRawContainer 
-		- size = 6;
+		- size = 7;
 		- value = 
 		{ CGEMdiDiagramParams 
 			- _placement = { CCommon_WINDOWPLACEMENT 
@@ -32,7 +32,35 @@ I-Logix-RPY-Archive version 8.5.2 Modeler * 1159120
 			- _UpLeft = 0 10 ;
 			- _DownRight = 851 437 ;
 			- _instanceName = "";
-			- m_nDiagramIndex = 3;
+			- m_nDiagramIndex = 4;
+		}
+		{ CGEMdiDiagramParams 
+			- _placement = { CCommon_WINDOWPLACEMENT 
+				- m_nLength = 44;
+				- m_nFlags = 0;
+				- m_showCmd = 1;
+				- m_ptMinPositionX = -1;
+				- m_ptMinPositionY = -1;
+				- m_ptMaxPositionX = -9;
+				- m_ptMaxPositionY = -36;
+				- m_nLeft = 150;
+				- m_nTop = 150;
+				- m_nRight = 1044;
+				- m_nBottom = 667;
+			}
+			- _wasOpenedOnCloseProject = 1;
+			- _theDiagram = { IHandle 
+				- _m2Class = "IDiagram";
+				- _filename = "Default.sbs";
+				- _subsystem = "Default";
+				- _class = "";
+				- _name = "RicePackages";
+				- _id = GUID b84b164b-b147-4833-bffb-7e4ef4c3eb7a;
+			}
+			- _UpLeft = 190 0 ;
+			- _DownRight = 1041 447 ;
+			- _instanceName = "";
+			- m_nDiagramIndex = 1;
 		}
 		{ CGEMdiDiagramParams 
 			- _placement = { CCommon_WINDOWPLACEMENT 
@@ -60,7 +88,7 @@ I-Logix-RPY-Archive version 8.5.2 Modeler * 1159120
 			- _UpLeft = 597 0 ;
 			- _DownRight = 1716 602 ;
 			- _instanceName = "";
-			- m_nDiagramIndex = 4;
+			- m_nDiagramIndex = 5;
 		}
 		{ CGEMdiDiagramParams 
 			- _placement = { CCommon_WINDOWPLACEMENT 
@@ -88,7 +116,7 @@ I-Logix-RPY-Archive version 8.5.2 Modeler * 1159120
 			- _UpLeft = 0 0 ;
 			- _DownRight = 851 447 ;
 			- _instanceName = "";
-			- m_nDiagramIndex = 2;
+			- m_nDiagramIndex = 3;
 		}
 		{ CGEMdiDiagramParams 
 			- _placement = { CCommon_WINDOWPLACEMENT 
@@ -116,7 +144,7 @@ I-Logix-RPY-Archive version 8.5.2 Modeler * 1159120
 			- _UpLeft = 0 0 ;
 			- _DownRight = 851 447 ;
 			- _instanceName = "";
-			- m_nDiagramIndex = 0;
+			- m_nDiagramIndex = 2;
 		}
 		{ CGEMdiDiagramParams 
 			- _placement = { CCommon_WINDOWPLACEMENT 
@@ -127,10 +155,10 @@ I-Logix-RPY-Archive version 8.5.2 Modeler * 1159120
 				- m_ptMinPositionY = -1;
 				- m_ptMaxPositionX = -9;
 				- m_ptMaxPositionY = -36;
-				- m_nLeft = 150;
-				- m_nTop = 150;
-				- m_nRight = 1044;
-				- m_nBottom = 667;
+				- m_nLeft = 210;
+				- m_nTop = 210;
+				- m_nRight = 1104;
+				- m_nBottom = 727;
 			}
 			- _wasOpenedOnCloseProject = 1;
 			- _theDiagram = { IHandle 
@@ -138,13 +166,13 @@ I-Logix-RPY-Archive version 8.5.2 Modeler * 1159120
 				- _filename = "Default.sbs";
 				- _subsystem = "Default";
 				- _class = "";
-				- _name = "objectmodeldiagram_9";
-				- _id = GUID b84b164b-b147-4833-bffb-7e4ef4c3eb7a;
+				- _name = "objectmodeldiagram_12";
+				- _id = GUID 727f902e-464a-4845-b358-2334c0f508c8;
 			}
-			- _UpLeft = 190 0 ;
-			- _DownRight = 1299 732 ;
+			- _UpLeft = 0 0 ;
+			- _DownRight = 1167 770 ;
 			- _instanceName = "";
-			- m_nDiagramIndex = 1;
+			- m_nDiagramIndex = 0;
 		}
 		{ CGEMdiDiagramParams 
 			- _placement = { CCommon_WINDOWPLACEMENT 
@@ -172,7 +200,7 @@ I-Logix-RPY-Archive version 8.5.2 Modeler * 1159120
 			- _UpLeft = 0 0 ;
 			- _DownRight = 851 478 ;
 			- _instanceName = "";
-			- m_nDiagramIndex = 5;
+			- m_nDiagramIndex = 6;
 		}
 	}
 	- _fullName = "H:\\git\\RiceAlgorithmGPGPU\\Rhapsody\\RiceGPU\\RiceGPU";
