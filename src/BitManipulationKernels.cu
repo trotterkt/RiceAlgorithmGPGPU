@@ -1,27 +1,15 @@
 /*
- * RiceAlgorithmKernels.h
+ * BitManipulationKernels.cpp
  *
- *  Created on: Feb 23, 2016
- *      Author: ktrotter
+ *  Created by: Keir Trotter
+ *  California State University, Fullerton
+ *  MSE, CPSC 597, Graduate Project
+ *
+ *  Copyright 2016 Keir Trotter
  */
 
-#ifndef SENSORKERNELS_H_
-#define SENSORKERNELS_H_
+#include <BitManipulationKernels.h>
 
-#include <stdio.h>
-#include "math.h" // CUDA Math library
-#include <AdaptiveEntropyEncoder.h>
-
-
-using namespace std;
-
-const int BitsInByte(8);
-const ulong MaximumThreads(Rows*Columns*Bands/BlockSize);
-const int MaximumEncodedBytes(77);            // Observed maximum number of encoded bytes
-const ulong MaximumEncodedMemory(MaximumThreads*MaximumEncodedBytes*BlockSize);
-
-// Do not have access to string library in CUDA, so need
-// to create own
 __device__ char * cuda_strcpy(char *dest, const char *src)
 {
   int i = 0;
@@ -74,138 +62,138 @@ __device__ const char *byte_to_binary(unsigned char* x, int numberOfBits)
 //*********************************************************************
 __device__ void shiftRight(unsigned char* array, unsigned int bitSize, unsigned int arrayBitShift)
 {
-	unsigned int numberOfBytes(bitSize/BitsInByte);
+    unsigned int numberOfBytes(bitSize/RiceAlgorithm::BitsPerByte);
 
-	if(bitSize % BitsInByte)
-	{
-		numberOfBytes++;
-	}
+    if(bitSize % RiceAlgorithm::BitsPerByte)
+    {
+        numberOfBytes++;
+    }
 
-	// Decide where in the copy the new bytes will go
-	//unsigned char* arrayCopy = new unsigned char[numberOfBytes];
-	// Not allocating from global memory is significantly faster
-	const int MaximumByteArray(80);
-	unsigned char arrayCopy[MaximumByteArray] = {0};
+    // Decide where in the copy the new bytes will go
+    //unsigned char* arrayCopy = new unsigned char[numberOfBytes];
+    // Not allocating from global memory is significantly faster
+    const int MaximumByteArray(80);
+    unsigned char arrayCopy[MaximumByteArray] = {0};
 
-	// Shift from bit to bit, and byte to byte
-	unsigned int byteShift = arrayBitShift / BitsInByte;
-	unsigned int bitShift = arrayBitShift % BitsInByte;
+    // Shift from bit to bit, and byte to byte
+    unsigned int byteShift = arrayBitShift / RiceAlgorithm::BitsPerByte;
+    unsigned int bitShift = arrayBitShift % RiceAlgorithm::BitsPerByte;
 
-	// Include neighboring bits to transfer to next byte
-	// First figure out the mask
-	unsigned char mask = powf(2, bitShift) - 1;
-	unsigned char previousBits(0);
+    // Include neighboring bits to transfer to next byte
+    // First figure out the mask
+    unsigned char mask = powf(2, bitShift) - 1;
+    unsigned char previousBits(0);
 
 
-	// Copy from byte to shifted byte
+    // Copy from byte to shifted byte
     for(unsigned int byteIndex=0; byteIndex<numberOfBytes; byteIndex++)
     {
-    	// don't shift larger than the size of the stream
-    	if((byteIndex + byteShift) >= numberOfBytes)
-    	{
-    		break;
-    	}
+        // don't shift larger than the size of the stream
+        if((byteIndex + byteShift) >= numberOfBytes)
+        {
+            break;
+        }
 
-    	//***************************************************
-    	// do some index checking
-    	if((byteIndex + byteShift) >= MaximumByteArray)
-    	{
-    		printf("We have an error  in shiftRight-- (byteIndex + byteShift)=%d\n", (byteIndex + byteShift));
-    		return;
-    	}
-    	//***************************************************
+        //***************************************************
+        // do some index checking
+        if((byteIndex + byteShift) >= MaximumByteArray)
+        {
+            printf("We have an error  in shiftRight-- (byteIndex + byteShift)=%d\n", (byteIndex + byteShift));
+            return;
+        }
+        //***************************************************
 
-    	arrayCopy[byteIndex + byteShift] = (array[byteIndex]) >> bitShift;
+        arrayCopy[byteIndex + byteShift] = (array[byteIndex]) >> bitShift;
 
-		if (byteIndex > 0)
-		{
-			arrayCopy[byteIndex + byteShift] |= previousBits;
-		}
+        if (byteIndex > 0)
+        {
+            arrayCopy[byteIndex + byteShift] |= previousBits;
+        }
 
-		previousBits = (array[byteIndex] & mask) << (BitsInByte - bitShift);
-	}
+        previousBits = (array[byteIndex] & mask) << (RiceAlgorithm::BitsPerByte - bitShift);
+    }
 
-	//***************************************************
-	// do more index checking
-	if((numberOfBytes) >= MaximumByteArray)
-	{
-		printf("We have an error  in shiftRight-- (numberOfBytes)=%d\n", numberOfBytes);
-		return;
-	}
-	//***************************************************
+    //***************************************************
+    // do more index checking
+    if((numberOfBytes) >= MaximumByteArray)
+    {
+        printf("We have an error  in shiftRight-- (numberOfBytes)=%d\n", numberOfBytes);
+        return;
+    }
+    //***************************************************
 
-	memcpy(array, arrayCopy, numberOfBytes);
+    memcpy(array, arrayCopy, numberOfBytes);
 
 }
 
 
 __device__ void shiftLeft(unsigned char* array, unsigned int bitSize, unsigned int arrayBitShift)
 {
-	unsigned int numberOfBytes(bitSize/BitsInByte);
+    unsigned int numberOfBytes(bitSize/RiceAlgorithm::BitsPerByte);
 
-	if(bitSize % BitsInByte)
-	{
-		numberOfBytes++;
-	}
+    if(bitSize % RiceAlgorithm::BitsPerByte)
+    {
+        numberOfBytes++;
+    }
 
-	// Decide where in the copy the new bytes will go
-	//unsigned char* arrayCopy = new unsigned char[numberOfBytes];
-	// Not allocating from global memory is significantly faster
-	const int MaximumByteArray(80);
-	unsigned char arrayCopy[MaximumByteArray] = {0};
+    // Decide where in the copy the new bytes will go
+    //unsigned char* arrayCopy = new unsigned char[numberOfBytes];
+    // Not allocating from global memory is significantly faster
+    const int MaximumByteArray(80);
+    unsigned char arrayCopy[MaximumByteArray] = {0};
 
-	memset(arrayCopy, 0, sizeof(arrayCopy));
+    memset(arrayCopy, 0, sizeof(arrayCopy));
 
-	// Shift from bit to bit, and byte to byte
-	unsigned int byteShift = arrayBitShift / BitsInByte;
-	unsigned int bitShift = arrayBitShift % BitsInByte;
+    // Shift from bit to bit, and byte to byte
+    unsigned int byteShift = arrayBitShift / RiceAlgorithm::BitsPerByte;
+    unsigned int bitShift = arrayBitShift % RiceAlgorithm::BitsPerByte;
 
-	// Include neighboring bits to transfer to next byte
-	// First figure out the mask
-	unsigned char mask = powf(2, bitShift) - 1;
-	unsigned char previousBits(0);
+    // Include neighboring bits to transfer to next byte
+    // First figure out the mask
+    unsigned char mask = powf(2, bitShift) - 1;
+    unsigned char previousBits(0);
 
 
-	// Copy from byte to shifted byte
+    // Copy from byte to shifted byte
     for(unsigned int byteIndex=byteShift; byteIndex<numberOfBytes; byteIndex++)
     {
-    	// don't shift larger than the size of the stream
-    	if((byteIndex - byteShift) < 0)
-    	{
-    		break;
-    	}
+        // don't shift larger than the size of the stream
+        if((byteIndex - byteShift) < 0)
+        {
+            break;
+        }
 
-    	previousBits = (array[byteIndex+1] & (mask << (BitsInByte - bitShift)));
-    	previousBits >>= (BitsInByte - bitShift);
+        previousBits = (array[byteIndex+1] & (mask << (RiceAlgorithm::BitsPerByte - bitShift)));
+        previousBits >>= (RiceAlgorithm::BitsPerByte - bitShift);
 
-    	//***************************************************
-    	// do some index checking
-    	if((byteIndex - byteShift) >= MaximumByteArray)
-    	{
-    		printf("We have an error  in shiftLeft -- (byteIndex - byteShift)=%d\n", (byteIndex + byteShift));
-    		return;
-    	}
-    	//***************************************************
+        //***************************************************
+        // do some index checking
+        if((byteIndex - byteShift) >= MaximumByteArray)
+        {
+            printf("We have an error  in shiftLeft -- (byteIndex - byteShift)=%d\n", (byteIndex + byteShift));
+            return;
+        }
+        //***************************************************
 
-		arrayCopy[byteIndex - byteShift] = (array[byteIndex]) << bitShift;
+        arrayCopy[byteIndex - byteShift] = (array[byteIndex]) << bitShift;
 
-		if (byteIndex <= (numberOfBytes-1))
-		{
-			arrayCopy[byteIndex - byteShift] |= previousBits;
-		}
+        if (byteIndex <= (numberOfBytes-1))
+        {
+            arrayCopy[byteIndex - byteShift] |= previousBits;
+        }
 
-	}
+    }
 
-	//***************************************************
-	// do more index checking
-	if((numberOfBytes) >= MaximumByteArray)
-	{
-		printf("We have an error in shiftLeft -- (numberOfBytes)=%d\n", numberOfBytes);
-		return;
-	}
-	//***************************************************
+    //***************************************************
+    // do more index checking
+    if((numberOfBytes) >= MaximumByteArray)
+    {
+        printf("We have an error in shiftLeft -- (numberOfBytes)=%d\n", numberOfBytes);
+        return;
+    }
+    //***************************************************
 
-	memcpy(array, arrayCopy, numberOfBytes);
+    memcpy(array, arrayCopy, numberOfBytes);
 }
 
 __device__ void bitwiseOr(unsigned char* byteFirst, unsigned char* byteSecond, unsigned int numberOfBytes, unsigned char* outByte)
@@ -276,7 +264,7 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
 {
 	// Returning immediately if selection not within range
 	// helps prevent thread divergence in warp
-	if(*selection > RiceAlgorithm::K14)
+	if(*selection > RiceAlgorithm::K13)
 	{
 		return;
 	}
@@ -627,5 +615,117 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* d_EncodedBlo
 }
 
 
+/**
+ * CUDA kernel that identifies the winning encoding scheme for each block
+ */
+__global__ void decodingKernel(unsigned char* d_EncodedBlocks, unsigned int* d_EncodedBlockSizes, ushort* d_PreProcessedImageData)
+{
+	// Operate on all samples for a given block together
 
-#endif /* SENSORKERNELS_H_ */
+	ulong dataIndex(0);
+
+	// http://www.martinpeniak.com/index.php?option=com_content&view=article&catid=17:updates&id=288:cuda-thread-indexing-explained
+	ulong blockId = blockIdx.x + blockIdx.y * gridDim.x;
+	ulong threadId = blockId * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) + threadIdx.x;
+
+//***************************************
+if(threadId > 4) return; // DEBUGGING 196608 max
+//***************************************
+
+	dataIndex = threadId;
+
+//	printf("threadIdx.x=%d threadIdx.y=%d threadIdx.z=%d blockIdx.x=%d blockIdx.y=%d blockIdx.z=%d blockIdx.y dataIndex=%d,  threadId=%d\n", threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, (196607-dataIndex), threadId);
+
+
+	RiceAlgorithm::CodingSelection selection;
+	unsigned int encodedLength(0);
+	unsigned int winningEncodedLength = -1;
+	RiceAlgorithm::CodingSelection winningSelection;
+
+
+    unsigned int code_len = (unsigned int)-1;
+    size_t encodedSizeList[32];
+    unsigned int totalEncodedSize(0);
+
+    //===============================================================================================
+//    totalEncodedSize = getWinningEncodedLength(inputSamples, dataIndex, &selection, encodedSizeList);
+
+//    switch (selection)
+//    {
+//		case RiceAlgorithm::K0:
+//		case RiceAlgorithm::K1:
+//		case RiceAlgorithm::K2:
+//		case RiceAlgorithm::K3:
+//		case RiceAlgorithm::K4:
+//		case RiceAlgorithm::K5:
+//		case RiceAlgorithm::K6:
+//		case RiceAlgorithm::K7:
+//		case RiceAlgorithm::K8:
+//		case RiceAlgorithm::K9:
+//		case RiceAlgorithm::K10:
+//		case RiceAlgorithm::K11:
+//		case RiceAlgorithm::K12:
+//		case RiceAlgorithm::K13:
+//		case RiceAlgorithm::K14:
+//			// Apply SplitSequence encoding  ===> Result is performance slow down (~0.5 sec).
+//            // Apparent that the switch statement is causing Thread Divergence
+//			splitSequenceEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, totalEncodedSize, encodedSizeList);
+//			break;
+//
+//		case RiceAlgorithm::ZeroBlockOpt:
+//
+//			break;
+//
+//		case RiceAlgorithm::SecondExtensionOpt:
+//
+//			break;
+//
+//		case RiceAlgorithm::NoCompressionOpt:
+//
+//			break;
+//
+//
+//    }
+
+    // Call will exit immediately return if Selection is out of range ==> prevents thread Divergence
+//	splitSequenceEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, &totalEncodedSize, encodedSizeList);  // index by the block size or 32
+//
+//	zeroBlockEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, &totalEncodedSize, encodedSizeList);  // index by the block size or 32
+//
+//	secondExtensionEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, &totalEncodedSize, encodedSizeList);  // index by the block size or 32
+
+	//:TODO: need No Comp Opt
+
+    //===============================================================================================
+
+	// Apply SplitSequence encoding
+	//encodedLength = splitSequenceEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks);  // index by the block size or 32
+
+
+	// Keep the encoded length for later
+	d_EncodedBlockSizes[dataIndex] = totalEncodedSize;
+
+	// Find the winning encoding for all encoding types
+    // This basically determines the winner
+//    if (encodedLength < winningEncodedLength)
+//    {
+//        //*this = *(*iteration);
+//        winningEncodedLength = encodedLength;
+//        winningSelection = selection;
+//
+//        //encodedSize = (*iteration)->getEncodedBlockSize();
+//    }
+
+//	if(dataIndex <= 2)
+//	{
+//	    printf("Line #430, (encodedLength=%d) dataIndex=%d d_EncodedBlocks=%s\n",
+//	    		encodedLength, dataIndex, byte_to_binary(&d_EncodedBlocks[dataIndex*64*2], encodedLength));
+//	}
+    //*************************************************************
+    // Once here, synchronization among all threads should happen
+    // Note that this is only applicable, for threads within a given
+    // block. But we do not want to return until all are available.
+    // Need to sync on the host.
+    //*************************************************************
+    __syncthreads();
+}
