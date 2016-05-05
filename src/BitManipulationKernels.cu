@@ -270,6 +270,7 @@ __device__ unsigned int getWinningEncodedLength(ushort* inputSamples, ulong data
     if(totalEncodedSize_Split < totalEncodedSize_NoComp)
     {
     	code_len = totalEncodedSize_Split;
+
     }
     else
     {
@@ -298,11 +299,10 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
 	//=========================================================================================================
 
 	// Not allocating from global memory is significantly faster
-	const int MaximumByteArray(80);
-    unsigned char localEncodedStream[MaximumByteArray];
+    unsigned char localEncodedStream[MaximumEncodedBytes];
     //=========================================================================================================
 
-    memset(localEncodedStream, 0, MaximumByteArray);
+    memset(localEncodedStream, 0, MaximumEncodedBytes);
 
 
     // assign each encoded sample and shift by the next one
@@ -321,9 +321,9 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
 
 	// see Lossless Data Compression, Blue Book, sec 5.1.2
     // place the code encoding selection
-    unsigned char selectionEncoding[MaximumByteArray] = {0};
+    unsigned char selectionEncoding[MaximumEncodedBytes] = {0};
     selectionEncoding[0] = *selection + 1;
-    bitwiseOr(localEncodedStream, selectionEncoding, MaximumByteArray, localEncodedStream);
+    bitwiseOr(localEncodedStream, selectionEncoding, MaximumEncodedBytes, localEncodedStream);
 
     //=========================================================================================================
 
@@ -338,8 +338,8 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
 
 
     //unsigned char encodedSample[MaximumByteAdditionalArray] = {0};
-    unsigned char encodedSample[MaximumByteArray] = {0};
-    unsigned char individualEncodedSample[MaximumByteArray];
+    unsigned char encodedSample[MaximumEncodedBytes] = {0};
+    unsigned char individualEncodedSample[MaximumEncodedBytes];
 
     //*totalEncodedSize += (32 * *selection);
 
@@ -362,7 +362,7 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
 
 
         // Finally merge the individual sample into this segment of the encoded stream
-        bitwiseOr(encodedSample, individualEncodedSample, MaximumByteArray, encodedSample);
+        bitwiseOr(encodedSample, individualEncodedSample, MaximumEncodedBytes, encodedSample);
 
     }
 
@@ -387,9 +387,6 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
 
 
     memcpy(&d_EncodedBlocks[partitianIndex], localEncodedStream, numberOfBytes);
-
-    if(dataIndex < 15 || (dataIndex > 196500 && dataIndex< 196520))
-    printf("totalEncodedSize=%d selection=%d dataIndex=%d partitianIndex=%d d_EncodedBlocks[partitianIndex]=%x\n", int(*totalEncodedSize), *selection, int(dataIndex), int(partitianIndex), int(d_EncodedBlocks[partitianIndex]));
 
 }
 

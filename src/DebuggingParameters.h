@@ -12,9 +12,9 @@
 #define DEBUGGINGPARAMETERS_H_
 
 const int LowerRange1(0);
-const int UpperRange1(20);
+const int UpperRange1(98350);
 
-const int LowerRange2(196500);
+const int LowerRange2(191290);
 const int UpperRange2(196510);
 
 
