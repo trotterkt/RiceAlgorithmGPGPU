@@ -12,10 +12,10 @@
 #define DEBUGGINGPARAMETERS_H_
 
 const int LowerRange1(0);
-const int UpperRange1(100);
+const int UpperRange1(20);
 
-const int LowerRange2(196508);
-const int UpperRange2(196608);
+const int LowerRange2(196500);
+const int UpperRange2(196510);
 
 
 #endif /* DEBUGGINGPARAMETERS_H_ */

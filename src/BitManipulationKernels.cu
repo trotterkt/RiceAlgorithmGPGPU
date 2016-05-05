@@ -60,7 +60,7 @@ __device__ const char *byte_to_binary(unsigned char* x, int numberOfBits)
 // Replacement for boost::dynamic_bitset on host. Also note that
 // Cuda math library is used vs. host version. (no pow(), powf() instead)
 //*********************************************************************
-__device__ void shiftRight(unsigned char* array, unsigned int bitSize, unsigned int arrayBitShift)
+__device__ __host__ void shiftRight(unsigned char* array, unsigned int bitSize, unsigned int arrayBitShift)
 {
     unsigned int numberOfBytes(bitSize/RiceAlgorithm::BitsPerByte);
 
@@ -127,7 +127,7 @@ __device__ void shiftRight(unsigned char* array, unsigned int bitSize, unsigned 
 }
 
 
-__device__ void shiftLeft(unsigned char* array, unsigned int bitSize, unsigned int arrayBitShift)
+__device__ __host__ void shiftLeft(unsigned char* array, unsigned int bitSize, unsigned int arrayBitShift)
 {
     unsigned int numberOfBytes(bitSize/RiceAlgorithm::BitsPerByte);
 
@@ -215,11 +215,22 @@ __device__ void bitwiseAnd(unsigned char* byteFirst, unsigned char* byteSecond, 
 
 __device__ unsigned int getWinningEncodedLength(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection, size_t* encodedSizeList)
 {
+    //unsigned int totalEncodedSize(0);
+    unsigned int totalEncodedSize_NoComp(0);
+    unsigned int totalEncodedSize_Split(0);
+
     unsigned int code_len = (unsigned int)-1;
     int i = 0, k = 0;
     int k_limit = 14;
 
 
+    // No Compression check is first
+    code_len = (32 * sizeof(ushort) * BitsInByte) + int(RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp);
+    *selection = RiceAlgorithm::NoCompressionOpt;
+    totalEncodedSize_NoComp = code_len;
+
+
+    // Then split sequence
     for(k = 0; k < k_limit; k++)
     {
 
@@ -238,21 +249,33 @@ __device__ unsigned int getWinningEncodedLength(ushort* inputSamples, ulong data
     }
 
     //size_t encodedSizeList[32];
-    unsigned int totalEncodedSize(0);
 
     // Get the total encoded size first
     for(int index = dataIndex*32; index < (dataIndex*32)+32; index++)
     {
         size_t encodedSize = (inputSamples[index] >> *selection) + 1;
         encodedSizeList[index-(dataIndex*32)] = encodedSize; // Store Fundamental Sequence values
-        totalEncodedSize += int(encodedSize);
+        totalEncodedSize_Split += int(encodedSize);
 
     }
 
-    // include space for the  code option
-    totalEncodedSize += int(RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp);
+    // Include length for split samples
+    totalEncodedSize_Split += (32 * *selection);
 
-    code_len = totalEncodedSize;
+
+    // include space for the  code option
+    totalEncodedSize_Split += int(RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp);
+
+
+    if(totalEncodedSize_Split < totalEncodedSize_NoComp)
+    {
+    	code_len = totalEncodedSize_Split;
+    }
+    else
+    {
+        code_len = totalEncodedSize_NoComp;
+    }
+
 
     return code_len;
 
@@ -262,6 +285,7 @@ __device__ unsigned int getWinningEncodedLength(ushort* inputSamples, ulong data
 __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection,
 		                              unsigned char* d_EncodedBlocks, unsigned int* totalEncodedSize, size_t* encodedSizeList)
 {
+
 	// Returning immediately if selection not within range
 	// helps prevent thread divergence in warp
 	if(*selection > RiceAlgorithm::K13)
@@ -270,49 +294,8 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
 	}
 
 
-
-
-
 	// Apply SplitSequence encoding
 	//=========================================================================================================
-
-//    unsigned int code_len = (unsigned int)-1;
-//    int i = 0, k = 0;
-//    int k_limit = 14;
-
-
-//    for(k = 0; k < k_limit; k++)
-//    {
-//
-//        unsigned int code_len_temp = 0;
-//        for(i = dataIndex*32; i < (dataIndex*32)+32; i++)
-//        {
-//        	ushort encodedSample = inputSamples[i] >> k;
-//            code_len_temp += (encodedSample) + 1 + k;
-//        }
-//
-//        if(code_len_temp < code_len)
-//        {
-//            code_len = code_len_temp;
-//            *selection = RiceAlgorithm::CodingSelection(k);
-//        }
-//    }
-
-    //size_t encodedSizeList[32];
-    //unsigned int totalEncodedSize(0);
-
-    // Assemble number of zeros for encoding
-//    for(int index = dataIndex*32; index < (dataIndex*32)+32; index++)
-//    {
-//        size_t encodedSize = (inputSamples[index] >> *selection) + 1;
-//        encodedSizeList[index-(dataIndex*32)] = encodedSize;
-//        //totalEncodedSize += int(encodedSize);
-//
-//    }
-
-    // include space for the  code option
-    //totalEncodedSize += int(RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp);
-
 
 	// Not allocating from global memory is significantly faster
 	const int MaximumByteArray(80);
@@ -342,15 +325,6 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
     selectionEncoding[0] = *selection + 1;
     bitwiseOr(localEncodedStream, selectionEncoding, MaximumByteArray, localEncodedStream);
 
-
-
-//    if(dataIndex <= 96)
-//    {
-//        printf("Line #306, BlockInx=%u d_EncodedBlocks(size:%d)=%s\n", dataIndex, totalEncodedSize, byte_to_binary(localEncodedStream, totalEncodedSize));
-//    }
-
-
-
     //=========================================================================================================
 
 
@@ -367,7 +341,7 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
     unsigned char encodedSample[MaximumByteArray] = {0};
     unsigned char individualEncodedSample[MaximumByteArray];
 
-    *totalEncodedSize += (32 * *selection);
+    //*totalEncodedSize += (32 * *selection);
 
 
     for(int index = 0; index < 32; index++)
@@ -386,19 +360,9 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
         shiftLeft(individualEncodedSample, *totalEncodedSize,  (BitsInByte*sizeof(byteConvert)) - *selection);
 
 
-//        if(dataIndex <= 1)
-//        {
-//             printf("index=%3d,  maskedSample=%3x byteConvert[0]=%2x byteConvert[1]=%2x totalEncodedSize=%d   individualEncodedSample=%s\n", index, maskedSample, byteConvert[0], byteConvert[1], (totalEncodedSize), byte_to_binary(individualEncodedSample, totalEncodedSize));
-//        }
-
 
         // Finally merge the individual sample into this segment of the encoded stream
         bitwiseOr(encodedSample, individualEncodedSample, MaximumByteArray, encodedSample);
-
-//        if(dataIndex <= 0)
-//         {
-//             printf("index=%3d, shifRight=%2d maskedSample=0x%3x totalEncodedSize=%d                                  encodedSample=%s\n", index, (*selection * index), maskedSample, (totalEncodedSize), byte_to_binary(encodedSample, totalEncodedSize));
-//         }
 
     }
 
@@ -416,39 +380,117 @@ __device__ void splitSequenceEncoding(ushort* inputSamples, ulong dataIndex, Ric
 
     shiftRight(encodedSample, *totalEncodedSize, (*totalEncodedSize - (32 * *selection)));
 
-    //if(dataIndex <= 1)
-    // {
-    //     printf("LAST:  totalEncodedSize=%d       encodedSample=%s\n", (totalEncodedSize), byte_to_binary(encodedSample, totalEncodedSize));
-    // }
-
-    //if(dataIndex <= 1)
-    //printf("BEFORE: totalEncodedSize=%d localEncodedStream=%s\n", (totalEncodedSize), byte_to_binary(localEncodedStream, totalEncodedSize));
 
     bitwiseOr(localEncodedStream, encodedSample, numberOfBytes, localEncodedStream);
 
     ulong partitianIndex = (dataIndex*MaximumEncodedBytes);
 
-    //printf("partitianIndex=%u dataIndex=%u localEncodedStream[0]=0x%4x numberOfBytes=%d\n", partitianIndex, dataIndex, localEncodedStream[0], numberOfBytes );
 
     memcpy(&d_EncodedBlocks[partitianIndex], localEncodedStream, numberOfBytes);
 
+    if(dataIndex < 15 || (dataIndex > 196500 && dataIndex< 196520))
+    printf("totalEncodedSize=%d selection=%d dataIndex=%d partitianIndex=%d d_EncodedBlocks[partitianIndex]=%x\n", int(*totalEncodedSize), *selection, int(dataIndex), int(partitianIndex), int(d_EncodedBlocks[partitianIndex]));
 
-//    d_EncodedBlocks[partitianIndex] = localEncodedStream[0];
-//    d_EncodedBlocks[partitianIndex+1] =  localEncodedStream[1];
-//    d_EncodedBlocks[partitianIndex+2] =  localEncodedStream[2];
-
-
-//    for(int i=0; i<64; i++)
-//    {
-//    	//encodedDataPtr[partitianIndex+i] = localEncodedStream[i];
-//    	d_EncodedBlocks[partitianIndex+i] = localEncodedStream[i];
-//    }
-
- //   code_len = totalEncodedSize;
-
-//	return code_len;
 }
 
+
+__device__ void noCompEncoding(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection,
+		                          unsigned char* d_EncodedBlocks, unsigned int* totalEncodedSize, size_t* encodedSizeList)
+{
+	// Returning immediately if selection not within range
+	// helps prevent thread divergence in warp
+	if(*selection != RiceAlgorithm::NoCompressionOpt)
+	{
+		return;
+	}
+
+	//if(threadId > 4) return; // DEBUGGING 196608 max
+
+
+	// Apply No Compression encoding
+	//=========================================================================================================
+
+	// Not allocating from global memory is significantly faster
+    unsigned char localEncodedStream[MaximumEncodedBytes] = {0};
+    //=========================================================================================================
+
+
+//    // assign each encoded sample and shift by the next one
+//    // at the end of the loop, we will assign the last one
+//    // unsigned char* localEncodedStream(0);
+//    for(int index = 31; index >= 0; index--)
+//    {
+//    	localEncodedStream[0] |= 0x1;
+//
+//    	int shift = encodedSizeList[index];
+//
+//        shiftRight(localEncodedStream, *totalEncodedSize, shift);
+//    }
+
+
+
+	// see Lossless Data Compression, Blue Book, sec 5.1.2
+    // place the code encoding selection
+    unsigned char selectionEncoding[MaximumEncodedBytes] = {0};
+    selectionEncoding[0] = RiceAlgorithm::NoCompressionOpt;
+
+    bitwiseOr(localEncodedStream, selectionEncoding, MaximumEncodedBytes, localEncodedStream);
+
+    shiftRight(localEncodedStream, MaximumEncodedBytes*BitsInByte,  (MaximumEncodedBytes*BitsInByte)-RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp - 4);
+    shiftLeft(localEncodedStream, MaximumEncodedBytes*BitsInByte, BitsInByte*sizeof(ushort)); // make room for next sample. insertion is in reverse
+
+
+    //=========================================================================================================
+
+    unsigned char individualEncodedSample[MaximumEncodedBytes] = {0};
+
+	*totalEncodedSize = 32 * sizeof(ushort) * BitsInByte + RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp;
+
+    for(int index = 0; index < 32; index++)
+    {
+        unsigned short sample = inputSamples[index+dataIndex*32];
+        unsigned char byteConvert[2] = {((sample&0xff00)>>8), (sample&0xff)}; //:KLUDGE: need to change the number into
+                                                                              // a byte form for printing only -- endian issue?
+
+        memset(individualEncodedSample, 0, MaximumEncodedBytes);
+
+        //memcpy(individualEncodedSample, &sample, sizeof(sample));
+        memcpy(individualEncodedSample, byteConvert, sizeof(sample));
+
+
+        shiftRight(individualEncodedSample, MaximumEncodedBytes*BitsInByte,  (MaximumEncodedBytes*BitsInByte)-(sizeof(sample)*BitsInByte));
+
+
+        bitwiseOr(localEncodedStream, individualEncodedSample, MaximumEncodedBytes, localEncodedStream);
+
+        // prepare space for each sample
+        if(index != 31)
+        {
+        	shiftLeft(localEncodedStream, MaximumEncodedBytes*BitsInByte, BitsInByte*sizeof(ushort)); // make room for next sample. insertion is in reverse
+        }
+    }
+
+    // determine number of bytes
+    unsigned int numberOfBytes(*totalEncodedSize/RiceAlgorithm::BitsPerByte);
+    if(*totalEncodedSize%RiceAlgorithm::BitsPerByte)
+    {
+    	numberOfBytes++;
+    }
+
+    // :TODO: Unclear why offset still exists
+    shiftLeft(localEncodedStream, numberOfBytes*BitsInByte, RiceAlgorithm::CodeOptionBitFieldFundamentalOrNoComp);
+//
+//    shiftRight(encodedSample, *totalEncodedSize, (*totalEncodedSize - (32 * *selection)));
+//
+//
+//    bitwiseOr(localEncodedStream, encodedSample, numberOfBytes, localEncodedStream);
+//
+    ulong partitianIndex = (dataIndex*MaximumEncodedBytes);
+
+
+    memcpy(&d_EncodedBlocks[partitianIndex], localEncodedStream, numberOfBytes);
+
+}
 
 __device__ void zeroBlockEncoding(ushort* inputSamples, ulong dataIndex, RiceAlgorithm::CodingSelection* selection,
 		                          unsigned char* d_EncodedBlocks, unsigned int* totalEncodedSize, size_t* encodedSizeList)
@@ -502,7 +544,7 @@ __device__ void secondExtensionEncoding(ushort* inputSamples, ulong dataIndex, R
 /**
  * CUDA kernel that identifies the winning encoding scheme for each block
  */
-__global__ void encodingKernel(ushort* inputSamples, unsigned char* d_EncodedBlocks, unsigned int* d_EncodedBlockSizes)
+__global__ void encodingKernel(ushort* inputSamples, unsigned char* d_EncodedBlocks, ushort* d_EncodedBlockSizes)
 {
 	// Operate on all samples for a given block together
 
@@ -512,13 +554,15 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* d_EncodedBlo
 	ulong blockId = blockIdx.x + blockIdx.y * gridDim.x;
 	ulong threadId = blockId * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) + threadIdx.x;
 
-//***************************************
-//if(threadId > 4) return; // DEBUGGING 196608 max
-//***************************************
-
+	// Provides ability to debug individual threads
+	//***************************************
+	//if(threadId != 196509 && threadId != 196508  && threadId != 196510 ) return; // DEBUGGING 196608 max
+	//if(threadId != 196509) return; // DEBUGGING 196608 max
+	//if(threadId != 196507 && threadId != 196508 && threadId != 196509) return; // DEBUGGING 196608 max
+	//***************************************
 	dataIndex = threadId;
 
-//	printf("threadIdx.x=%d threadIdx.y=%d threadIdx.z=%d blockIdx.x=%d blockIdx.y=%d blockIdx.z=%d blockIdx.y dataIndex=%d,  threadId=%d\n", threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, (196607-dataIndex), threadId);
+	//printf("threadIdx.x=%d threadIdx.y=%d threadIdx.z=%d blockIdx.x=%d blockIdx.y=%d blockIdx.z=%d blockIdx.y dataIndex=%lu,  threadId=%lu\n", threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, dataIndex, threadId);
 
 
 	RiceAlgorithm::CodingSelection selection;
@@ -534,51 +578,56 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* d_EncodedBlo
     //===============================================================================================
     totalEncodedSize = getWinningEncodedLength(inputSamples, dataIndex, &selection, encodedSizeList);
 
-//    switch (selection)
-//    {
-//		case RiceAlgorithm::K0:
-//		case RiceAlgorithm::K1:
-//		case RiceAlgorithm::K2:
-//		case RiceAlgorithm::K3:
-//		case RiceAlgorithm::K4:
-//		case RiceAlgorithm::K5:
-//		case RiceAlgorithm::K6:
-//		case RiceAlgorithm::K7:
-//		case RiceAlgorithm::K8:
-//		case RiceAlgorithm::K9:
-//		case RiceAlgorithm::K10:
-//		case RiceAlgorithm::K11:
-//		case RiceAlgorithm::K12:
-//		case RiceAlgorithm::K13:
-//		case RiceAlgorithm::K14:
-//			// Apply SplitSequence encoding  ===> Result is performance slow down (~0.5 sec).
-//            // Apparent that the switch statement is causing Thread Divergence
-//			splitSequenceEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, totalEncodedSize, encodedSizeList);
-//			break;
-//
-//		case RiceAlgorithm::ZeroBlockOpt:
-//
-//			break;
-//
-//		case RiceAlgorithm::SecondExtensionOpt:
-//
-//			break;
-//
-//		case RiceAlgorithm::NoCompressionOpt:
-//
-//			break;
-//
-//
-//    }
+
+    // Don't do this as in the sequential versions -
+    // prone to thread divergence
+    //***************************************************
+	//    switch (selection)
+	//    {
+	//		case RiceAlgorithm::K0:
+	//		case RiceAlgorithm::K1:
+	//		case RiceAlgorithm::K2:
+	//		case RiceAlgorithm::K3:
+	//		case RiceAlgorithm::K4:
+	//		case RiceAlgorithm::K5:
+	//		case RiceAlgorithm::K6:
+	//		case RiceAlgorithm::K7:
+	//		case RiceAlgorithm::K8:
+	//		case RiceAlgorithm::K9:
+	//		case RiceAlgorithm::K10:
+	//		case RiceAlgorithm::K11:
+	//		case RiceAlgorithm::K12:
+	//		case RiceAlgorithm::K13:
+	//		case RiceAlgorithm::K14:
+	//			// Apply SplitSequence encoding  ===> Result is performance slow down (~0.5 sec).
+	//            // Apparent that the switch statement is causing Thread Divergence
+	//			splitSequenceEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, totalEncodedSize, encodedSizeList);
+	//			break;
+	//
+	//		case RiceAlgorithm::ZeroBlockOpt:
+	//
+	//			break;
+	//
+	//		case RiceAlgorithm::SecondExtensionOpt:
+	//
+	//			break;
+	//
+	//		case RiceAlgorithm::NoCompressionOpt:
+	//
+	//			break;
+	//
+	//
+	//    }
+    //***************************************************
 
     // Call will exit immediately return if Selection is out of range ==> prevents thread Divergence
 	splitSequenceEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, &totalEncodedSize, encodedSizeList);  // index by the block size or 32
 
+	noCompEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, &totalEncodedSize, encodedSizeList);  // index by the block size or 32
+
 	zeroBlockEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, &totalEncodedSize, encodedSizeList);  // index by the block size or 32
 
 	secondExtensionEncoding(inputSamples, dataIndex, &selection, d_EncodedBlocks, &totalEncodedSize, encodedSizeList);  // index by the block size or 32
-
-	//:TODO: need No Comp Opt
 
     //===============================================================================================
 
@@ -589,22 +638,7 @@ __global__ void encodingKernel(ushort* inputSamples, unsigned char* d_EncodedBlo
 	// Keep the encoded length for later
 	d_EncodedBlockSizes[dataIndex] = totalEncodedSize;
 
-	// Find the winning encoding for all encoding types
-    // This basically determines the winner
-//    if (encodedLength < winningEncodedLength)
-//    {
-//        //*this = *(*iteration);
-//        winningEncodedLength = encodedLength;
-//        winningSelection = selection;
-//
-//        //encodedSize = (*iteration)->getEncodedBlockSize();
-//    }
 
-//	if(dataIndex <= 2)
-//	{
-//	    printf("Line #430, (encodedLength=%d) dataIndex=%d d_EncodedBlocks=%s\n",
-//	    		encodedLength, dataIndex, byte_to_binary(&d_EncodedBlocks[dataIndex*64*2], encodedLength));
-//	}
     //*************************************************************
     // Once here, synchronization among all threads should happen
     // Note that this is only applicable, for threads within a given
