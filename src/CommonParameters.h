@@ -1,8 +1,11 @@
 /*
  * CommonParameters.h
  *
- *  Created on: May 3, 2016
- *      Author: ktrotter
+ *  Created by: Keir Trotter
+ *  California State University, Fullerton
+ *  MSE, CPSC 597, Graduate Project
+ *
+ *  Copyright 2016 Keir Trotter
  */
 
 #ifndef COMMONPARAMETERS_H_
@@ -16,7 +19,6 @@ const int Bands(6);
 const int BlockSize(32);
 
 const int BitsInByte(8);
-//const int MaximumEncodedBytes(77);            // Observed maximum number of encoded bytes
 const int MaximumEncodedBytes(32*sizeof(ushort) + 1);            // Observed maximum number of encoded bytes
 const int NumberEncodedPackets(Rows*Columns*Bands/32);
 const ulong MaximumEncodedMemory(MaximumEncodedBytes*NumberEncodedPackets);

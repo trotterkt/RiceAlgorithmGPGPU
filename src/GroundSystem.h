@@ -1,8 +1,11 @@
 /*
  * GroundSystem.h
  *
- *  Created on: Mar 28, 2016
- *      Author: trotterkt
+ *  Created by: Keir Trotter
+ *  California State University, Fullerton
+ *  MSE, CPSC 597, Graduate Project
+ *
+ *  Copyright 2016 Keir Trotter
  */
 
 #ifndef GROUNDSYSTEM_H_
@@ -21,7 +24,7 @@ class GroundSystem
 		GroundSystem(ImagePersistence* image);
 		virtual ~GroundSystem();
 
-		void process(ushort *d_PreProcessedImageData, unsigned char* d_EncodedBlocks, ushort* d_EncodedBlockSizes, ushort* referenceResiduals = 0);
+		double process(ushort *d_PreProcessedImageData, unsigned char* d_EncodedBlocks, ushort* d_EncodedBlockSizes, ushort* referenceResiduals = 0);
 
 		// For validation
 		ushort* getSamples(){ return myRawSamples; }
@@ -33,28 +36,6 @@ class GroundSystem
 		RiceAlgorithm::ImagePersistence* mySource;
 
 		ushort* myRawSamples;
-/*
-		//:KLUDGE: method
-	    // This is very much a kludge - since I only expect to see non-zero
-	    // selection id's, look for the first non-zero data. I'll use this to determine
-	    // where to shift left. If this ever turned into production code it should be fixed
-        //*********************************************************************************
-		void adjustPackeDataPosition(unsigned char* packedData, size_t dataBitLength)
-		{
-			int shiftIndex=0;
-			for(shiftIndex; shiftIndex<7; shiftIndex++) // expect it to be fairly soon
-			{
-				if(packedData[shiftIndex])
-				{
-					break;
-				}
-			}
-			shiftIndex *= RiceAlgorithm::BitsPerByte;
-			shiftLeft(packedData, dataBitLength, shiftIndex);
-		}
-*/
-        void getExpectedNextPacketPosition(unsigned char* currentEncodingPtr, int packetBitLength, int &byte, int &bit, ulong count);
-
 };
 
 } /* namespace RiceAlgorithm */

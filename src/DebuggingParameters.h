@@ -1,8 +1,11 @@
 /*
  * DebuggingParameters.h
  *
- *  Created on: Apr 13, 2016
- *      Author: trottke1
+ *  Created by: Keir Trotter
+ *  California State University, Fullerton
+ *  MSE, CPSC 597, Graduate Project
+ *
+ *  Copyright 2016 Keir Trotter
  */
 
 // These are for isolating certain segments of the
