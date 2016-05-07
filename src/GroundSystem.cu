@@ -346,18 +346,18 @@ void GroundSystem::process(ushort *d_PreProcessedImageData, unsigned char* d_Enc
 		}
 
 	}
-
+*/
 
 	// Perform unprediction of the residual values
-	RiceAlgorithm::Predictor unprocessor(myHeader.xDimension, myHeader.yDimension, myHeader.zDimension);
+	RiceAlgorithm::Predictor unprocessor(x, y, z);
 
 	ushort* samples = new ushort[NumberOfSamples];
-	unprocessor.getSamples(residualsPtr, samples);
+	unprocessor.getSamples(h_PreProcessedImageData, samples);
 
 
 	mySource->sendDecodedData(reinterpret_cast<char*>(samples), NumberOfSamples*sizeof(short));
 
-*/
+
     #ifdef DEBUG
     std::ofstream residualsStream;
     residualsStream.open("residualsGround.bin", ios::out | ios::in | ios::binary | ios::trunc);
