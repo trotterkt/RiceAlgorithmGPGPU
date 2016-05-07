@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <DebuggingParameters.h>
 #include "math.h" // CUDA Math library
+#include <CudaHelper.h>
+
 
 #ifdef DEBUG
 #include <fstream>
@@ -23,7 +25,17 @@ using namespace RiceAlgorithm;
 
 GroundSystem::GroundSystem(ImagePersistence* image) : mySource(image), myRawSamples(0)
 {
+    //:TODO: There are some inconsistencies here around dimension extraction
+    // that should be addressed
     memset(&myHeader, 0, sizeof(CompressedHeader));
+    ushort x;
+    ushort y;
+    ushort z;
+
+    image->getDimensions(x, y, z);
+    myHeader.xDimension = x;
+    myHeader.yDimension = y;
+    myHeader.zDimension = z;
 }
 
 GroundSystem::~GroundSystem()
@@ -35,7 +47,7 @@ GroundSystem::~GroundSystem()
     }
 }
 
-void GroundSystem::process(ushort* referenceResiduals)
+void GroundSystem::process(ushort *d_PreProcessedImageData, unsigned char* d_EncodedBlocks, ushort* d_EncodedBlockSizes, ushort* referenceResiduals)
 {
 
 	// This begins the decoding
@@ -43,7 +55,14 @@ void GroundSystem::process(ushort* referenceResiduals)
 
 	// Having the raw sample dimensions from the header, allocate space for
 	// the decoding
-	const long NumberOfSamples(myHeader.xDimension * myHeader.yDimension * myHeader.zDimension);
+    ushort x(0);
+    ushort y(0);
+    ushort z(0);
+
+    //:TODO: There are some inconsistencies here around dimension extraction
+    // that should be addressed
+	mySource->getDimensions(x, y, z);
+	const long NumberOfSamples(x * y * z);
 
 	myRawSamples = new ushort[NumberOfSamples];
 
@@ -54,11 +73,52 @@ void GroundSystem::process(ushort* referenceResiduals)
 
 	unsigned int additionalBits(0);
 
-	ushort* encodedBlockSizes = new ushort[(myHeader.xDimension *
-	                                        myHeader.yDimension *
-			                                myHeader.zDimension) / 32];
+	ushort* encodedBlockSizes = new ushort[NumberOfSamples / 32];
 	ulong count(0);
 
+
+   	// ***Block and Grid size determinations***
+   	//=========================================================================
+   	// Block XDim = 32, YDim = 32 (Y Dim will access 32 samples at a time),
+   	// 1024 threads will access 32768 samples.
+   	//
+   	// Grid XDim = 6, YDim = 32 ( this is equivalent to 192 blocks )
+   	// Total is then 6291456 samples processed
+   	//
+   	//
+   	//========================================================================
+   	dim3 threadsPerBlock(32, 32); // Threads per block will be limited by the
+   	                              // CC of the GPGPU
+   	                              // (i.e. lower CC only allow 256 threads per block)
+   	dim3 gridBlocks(6, 32);
+
+   	decodingKernel<<<gridBlocks, threadsPerBlock>>> (d_PreProcessedImageData, d_EncodedBlocks, d_EncodedBlockSizes);
+
+   	CUDA_CHECK_RETURN(cudaDeviceSynchronize());
+
+
+
+    ushort* h_PreProcessedImageData = new ushort[NumberOfSamples];
+   	CUDA_CHECK_RETURN(cudaMemcpy(h_PreProcessedImageData, d_PreProcessedImageData, NumberOfSamples*sizeof(ushort), cudaMemcpyDeviceToHost));
+
+
+	#ifdef DEBUG
+	const long MaximumBlocks(NumberOfSamples / 32);
+
+	for (long blockIndex = 0; blockIndex < MaximumBlocks; blockIndex++)
+	{
+		for(int index=0; index<32; index++)
+		{
+			if(referenceResiduals[blockIndex*32 + index] != h_PreProcessedImageData[blockIndex*32 + index])
+			{
+				cout << "Mismatch residual value at Block:" << blockIndex << " Index:" << index << endl;
+			}
+		}
+	}
+	#endif
+
+
+/*
 	SplitSequence decodedSequence(myHeader.xDimension * myHeader.yDimension * myHeader.zDimension);
 	AdaptiveEntropyEncoder decodedNocomp(myHeader.xDimension * myHeader.yDimension * myHeader.zDimension);
 
@@ -297,7 +357,7 @@ void GroundSystem::process(ushort* referenceResiduals)
 
 	mySource->sendDecodedData(reinterpret_cast<char*>(samples), NumberOfSamples*sizeof(short));
 
-
+*/
     #ifdef DEBUG
     std::ofstream residualsStream;
     residualsStream.open("residualsGround.bin", ios::out | ios::in | ios::binary | ios::trunc);
@@ -309,15 +369,19 @@ void GroundSystem::process(ushort* referenceResiduals)
     //for(long index=0; index<NumberOfSamples; index++)
     for(long index=0; index<2000; index++)
     {
-        cout << "residualsGround[" << index << "]=" << residualsPtr[index] << endl;
+        cout << "residualsGround[" << index << "]=" << h_PreProcessedImageData[index] << endl;
     }
-    residualsStream.write(reinterpret_cast<char*>(residualsPtr), (1024*1024*6*2));
+    residualsStream.write(reinterpret_cast<char*>(h_PreProcessedImageData), (1024*1024*6*2));
     residualsStream.close();
     #endif
 
-    delete[] encodedBlockSizes;
-    delete[] residualsPtr;
-    delete[] samples;
+
+   	delete [] h_PreProcessedImageData;
+
+    //delete[] encodedBlockSizes;
+    //delete[] samples;
+
+
 }
 
 
@@ -343,6 +407,7 @@ void GroundSystem::readHeader()
 
 void GroundSystem::getExpectedNextPacketPosition(unsigned char* currentEncodingPtr, int packetBitLength, int &byte, int &bit, ulong count)
 {
+/*
     static double currentTotalLength(19); // In bytes...skip the header
 
     double endLength = currentTotalLength; // In bytes
@@ -380,6 +445,7 @@ void GroundSystem::getExpectedNextPacketPosition(unsigned char* currentEncodingP
        ((count >= LowerRange2) && (count <= UpperRange2)))
             cout << "...Next ID:K" << int(selection-1) << endl;
     #endif
+*/
 }
 
 

@@ -21,7 +21,7 @@ class GroundSystem
 		GroundSystem(ImagePersistence* image);
 		virtual ~GroundSystem();
 
-		void process(ushort* referenceResiduals = 0);
+		void process(ushort *d_PreProcessedImageData, unsigned char* d_EncodedBlocks, ushort* d_EncodedBlockSizes, ushort* referenceResiduals = 0);
 
 		// For validation
 		ushort* getSamples(){ return myRawSamples; }
@@ -33,7 +33,7 @@ class GroundSystem
 		RiceAlgorithm::ImagePersistence* mySource;
 
 		ushort* myRawSamples;
-		
+/*
 		//:KLUDGE: method
 	    // This is very much a kludge - since I only expect to see non-zero
 	    // selection id's, look for the first non-zero data. I'll use this to determine
@@ -52,7 +52,7 @@ class GroundSystem
 			shiftIndex *= RiceAlgorithm::BitsPerByte;
 			shiftLeft(packedData, dataBitLength, shiftIndex);
 		}
-
+*/
         void getExpectedNextPacketPosition(unsigned char* currentEncodingPtr, int packetBitLength, int &byte, int &bit, ulong count);
 
 };

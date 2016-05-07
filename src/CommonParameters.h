@@ -19,6 +19,7 @@ const int BitsInByte(8);
 //const int MaximumEncodedBytes(77);            // Observed maximum number of encoded bytes
 const int MaximumEncodedBytes(32*sizeof(ushort) + 1);            // Observed maximum number of encoded bytes
 const int NumberEncodedPackets(Rows*Columns*Bands/32);
+const ulong MaximumEncodedMemory(MaximumEncodedBytes*NumberEncodedPackets);
 
 
 
